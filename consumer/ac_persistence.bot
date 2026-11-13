@@ -1,0 +1,154 @@
+# ac_persistence -- a database file survives close and reopen; commit persists, rollback does not; open failures
+# leak nothing; opening and closing repeatedly leaves no stale handle.
+# Each test removes its own files first and last, so none depends on what an earlier one left behind.
+import harness
+import posix
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::int
+import std::list
+import std::str
+
+fn wipe(path: str) -> unit:
+    a = posix::remove(path)
+    b = posix::remove(path.concat("-journal"))
+    c = posix::remove(path.concat("-wal"))
+    d = posix::remove(path.concat("-shm"))
+    unit
+
+nomethod fn count_in(db: sqlite::Connection) -> int errors sqlite::failure::Failure:
+    rows = db.query("select count(*) from t", [])
+    harness::int_cell(rows, 0, 0)
+
+fn t_reopen() -> unit errors sqlite::failure::Failure:
+    path = "ac_persist_reopen.db"
+    wipe(path)
+    db = sqlite::open(path)
+    db.execute("create table t(id integer primary key, name text, payload blob)", [])
+    db.execute("insert into t(name, payload) values (?, ?)", [sqlite::value::text("durable"), sqlite::value::null()])
+    db.execute("insert into t(name, payload) values (?, ?)", [sqlite::value::text("also durable"), sqlite::value::null()])
+    db.close()
+    again = sqlite::open_existing(path)
+    rows = again.query("select id, name from t order by id", [])
+    harness::expect_int("reopen: both rows survived", rows.length(), 2)
+    harness::expect_str("reopen: content", harness::text_cell(rows, 1, 1), "also durable")
+    harness::check("reopen: NULL survived", harness::null_cell?(again.query("select payload from t where id = 1", []), 0, 0))
+    again.close()
+    wipe(path)
+
+fn insert_two_then_fail(db: sqlite::Connection) -> unit errors sqlite::failure::Failure:
+    tx = db.begin()
+    db.execute("insert into t(name) values ('kept?')", [])
+    db.execute("insert into t(id, name) values (1, 'collides with the first row')", [])
+    tx.commit()
+
+fn t_commit_and_rollback_persist() -> unit errors sqlite::failure::Failure:
+    path = "ac_persist_tx.db"
+    wipe(path)
+    db = sqlite::open(path)
+    db.execute("create table t(id integer primary key, name text)", [])
+    db.execute("insert into t(id, name) values (1, 'seed')", [])
+    tx = db.begin()
+    db.execute("insert into t(name) values ('committed one')", [])
+    db.execute("insert into t(name) values ('committed two')", [])
+    tx.commit()
+    insert_two_then_fail(db):
+        on sqlite::failure::Failure f:
+            harness::check("persist: failing transaction reports a constraint", f.info.kind == sqlite::failure::ErrorKind::Constraint)
+            unit
+    harness::expect_int("persist: before close, rolled back rows are absent", count_in(db), 3)
+    harness::check("persist: not left in a transaction", not db.in_transaction?())
+    db.close()
+    again = sqlite::open(path)
+    harness::expect_int("persist: after reopen, only committed rows", count_in(again), 3)
+    rows = again.query("select name from t order by id", [])
+    harness::expect_str("persist: committed row survived", harness::text_cell(rows, 2, 0), "committed two")
+    again.close()
+    wipe(path)
+
+fn t_read_only() -> unit errors sqlite::failure::Failure:
+    path = "ac_persist_ro.db"
+    wipe(path)
+    db = sqlite::open(path)
+    db.execute("create table t(x)", [])
+    db.execute("insert into t values (1)", [])
+    db.close()
+    ro = sqlite::open_read_only(path)
+    harness::expect_int("read-only: reads work", count_in(ro), 1)
+    ro.execute("insert into t values (2)", []):
+        on sqlite::failure::Failure f:
+            harness::check("read-only: a write is a read-only Failure", f.info.kind == sqlite::failure::ErrorKind::ReadOnly)
+            0
+    harness::expect_int("read-only: statement released after the failed write", sqlite::open_statements(), 0)
+    ro.close()
+    wipe(path)
+
+fn t_open_failures() -> unit errors sqlite::failure::Failure:
+    wipe("ac_persist_missing.db")
+    before = sqlite::open_connections()
+    missing = sqlite::open_existing("ac_persist_missing.db"):
+        on sqlite::failure::Failure f:
+            harness::check("open failure: missing file is cant-open", f.info.kind == sqlite::failure::ErrorKind::CantOpen)
+            harness::check("open failure: message is not empty", f.info.message.length() > 0)
+            harness::expect_str("open failure: operation named", f.info.operation, "open")
+            sqlite::open_memory()
+    missing.close()
+    nodir = sqlite::open("no/such/directory/x.db"):
+        on sqlite::failure::Failure f:
+            harness::check("open failure: missing directory is cant-open", f.info.kind == sqlite::failure::ErrorKind::CantOpen)
+            sqlite::open_memory()
+    nodir.close()
+    harness::expect_int("open failure: no handle leaked by failed opens", sqlite::open_connections(), before)
+    harness::check("open failure: open_existing did not create the file", not posix::remove("ac_persist_missing.db"))
+
+fn t_repeated_open_close() -> unit errors sqlite::failure::Failure:
+    path = "ac_persist_loop.db"
+    wipe(path)
+    seed = sqlite::open(path)
+    seed.execute("create table t(n integer)", [])
+    seed.close()
+    loop i from 0 to 300:
+        db = sqlite::open(path)
+        db.execute("insert into t(n) values (?)", [sqlite::value::integer(i)])
+        db.close()
+    final = sqlite::open(path)
+    harness::expect_int("repeat: 300 open/insert/close cycles all persisted", count_in(final), 300)
+    rows = final.query("select sum(n) from t", [])
+    harness::expect_int("repeat: contents intact", harness::int_cell(rows, 0, 0), 44850)
+    final.close()
+    harness::expect_int("repeat: no connection left open", sqlite::open_connections(), 0)
+    harness::expect_int("repeat: no statement left open", sqlite::open_statements(), 0)
+    old = sqlite::open_memory()
+    old.close()
+    stale_close = old.close():
+        on sqlite::failure::Failure f:
+            harness::check("repeat: a stale handle is detected, not freed twice", f.info.kind == sqlite::failure::ErrorKind::Misuse)
+            unit
+    fresh = sqlite::open_memory()
+    harness::check("repeat: a reused slot does not revive a stale handle", fresh.open?() and not old.open?())
+    fresh.close()
+    wipe(path)
+
+fn run_all() -> unit:
+    t_reopen():
+        on sqlite::failure::Failure f:
+            harness::unexpected("reopen", sqlite::failure::describe(f.info))
+    t_commit_and_rollback_persist():
+        on sqlite::failure::Failure f:
+            harness::unexpected("commit_and_rollback", sqlite::failure::describe(f.info))
+    t_read_only():
+        on sqlite::failure::Failure f:
+            harness::unexpected("read_only", sqlite::failure::describe(f.info))
+    t_open_failures():
+        on sqlite::failure::Failure f:
+            harness::unexpected("open_failures", sqlite::failure::describe(f.info))
+    t_repeated_open_close():
+        on sqlite::failure::Failure f:
+            harness::unexpected("repeated_open_close", sqlite::failure::describe(f.info))
+    harness::expect_int("no connection leaked", sqlite::open_connections(), 0)
+    harness::finish()
+
+with context harness::tally()
+with context sqlite::engine()
+run_all()

@@ -1,0 +1,231 @@
+# ac_values -- the five storage classes through the package: NULL, INTEGER, REAL, TEXT, BLOB.
+# Each check also asks SQLite itself (typeof, length, hex) what it stored, so a wrong binding cannot hide behind a
+# matching wrong read.
+import harness
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::abi::bytes
+import std::byte
+import std::int
+import std::list
+import std::str
+
+fn byte_of(n: int) -> std::byte::Byte:
+    if n < 0 or n > 255:
+        return 0
+    n
+
+fn ramp() -> std::abi::bytes::Bytes:
+    all = loop i from 0 to 256:
+        byte_of(i)
+    std::abi::bytes::from_list(all)
+
+fn blob_of(values: List[int]) -> std::abi::bytes::Bytes:
+    all = loop v in values:
+        byte_of(v)
+    std::abi::bytes::from_list(all)
+
+fn text_with_nul() -> str:
+    data = blob_of([97, 0, 98, 0, 0, 99])
+    std::abi::bytes::decode_utf8(data):
+        on InvalidUtf8:
+            "bad"
+
+fn setup(db: sqlite::Connection) -> unit errors sqlite::failure::Failure:
+    db.execute("create table v(id integer primary key, x)", [])
+    unit
+
+nomethod fn put(db: sqlite::Connection, id: sqlite::value::Int64, x: sqlite::value::Value) -> int errors sqlite::failure::Failure:
+    db.execute("insert into v(id, x) values (?, ?)", [sqlite::value::integer(id), x])
+
+fn t_null() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    setup(db)
+    put(db, 1, sqlite::value::null())
+    put(db, 2, sqlite::value::text(""))
+    put(db, 3, sqlite::value::blob(std::abi::bytes::from_list([])))
+    put(db, 4, sqlite::value::integer(0))
+    put(db, 5, sqlite::value::real(0.0))
+    rows = db.query("select x, typeof(x) from v order by id", [])
+    harness::expect_str("null: stored as NULL", harness::text_cell(rows, 0, 1), "null")
+    harness::expect_str("null: '' stored as TEXT", harness::text_cell(rows, 1, 1), "text")
+    harness::expect_str("null: x'' stored as BLOB", harness::text_cell(rows, 2, 1), "blob")
+    harness::expect_str("null: 0 stored as INTEGER", harness::text_cell(rows, 3, 1), "integer")
+    harness::expect_str("null: 0.0 stored as REAL", harness::text_cell(rows, 4, 1), "real")
+    harness::check("null: reads back as NULL", harness::null_cell?(rows, 0, 0))
+    harness::check("null: empty text is not NULL", not harness::null_cell?(rows, 1, 0))
+    harness::check("null: empty blob is not NULL", not harness::null_cell?(rows, 2, 0))
+    harness::check("null: zero is not NULL", not harness::null_cell?(rows, 3, 0))
+    harness::check("null: real zero is not NULL", not harness::null_cell?(rows, 4, 0))
+    harness::expect_str("null: kinds", harness::kind_name_of(rows, 0, 0).concat(" / ").concat(harness::kind_name_of(rows, 1, 0)).concat(" / ").concat(harness::kind_name_of(rows, 2, 0)).concat(" / ").concat(harness::kind_name_of(rows, 3, 0)).concat(" / ").concat(harness::kind_name_of(rows, 4, 0)), "NULL / TEXT / BLOB / INTEGER / REAL")
+    harness::check("null: Value equality separates NULL from '' and x''", sqlite::value::null() != sqlite::value::text("") and sqlite::value::null() != sqlite::value::blob(std::abi::bytes::from_list([])) and sqlite::value::text("") != sqlite::value::blob(std::abi::bytes::from_list([])) and sqlite::value::null() == sqlite::value::null())
+    nulls = db.query("select count(*) from v where x is null", [])
+    harness::expect_int("null: SQL sees exactly one NULL", harness::int_cell(nulls, 0, 0), 1)
+    db.close()
+
+fn t_unicode() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    setup(db)
+    put(db, 1, sqlite::value::text("héllo wörld"))
+    put(db, 2, sqlite::value::text("日本語のテキスト"))
+    put(db, 3, sqlite::value::text("emoji 🎉🚀 outside the BMP"))
+    put(db, 4, sqlite::value::text("عربى"))
+    put(db, 5, sqlite::value::text(text_with_nul()))
+    rows = db.query("select x, length(x), length(cast(x as blob)) from v order by id", [])
+    harness::expect_str("unicode: latin", harness::text_cell(rows, 0, 0), "héllo wörld")
+    harness::expect_str("unicode: CJK", harness::text_cell(rows, 1, 0), "日本語のテキスト")
+    harness::expect_str("unicode: astral plane", harness::text_cell(rows, 2, 0), "emoji 🎉🚀 outside the BMP")
+    harness::expect_str("unicode: right-to-left", harness::text_cell(rows, 3, 0), "عربى")
+    harness::expect_int("unicode: SQLite counts characters (CJK)", harness::int_cell(rows, 1, 1), 8)
+    harness::expect_int("unicode: SQLite sees UTF-8 bytes (CJK)", harness::int_cell(rows, 1, 2), 24)
+    harness::expect_int("unicode: astral characters (emoji row)", harness::int_cell(rows, 2, 1), 24)
+    harness::expect_str("embedded NUL: round-trips", harness::text_cell(rows, 4, 0), text_with_nul())
+    harness::expect_int("embedded NUL: SQLite holds all 6 bytes", harness::int_cell(rows, 4, 2), 6)
+    nul = db.query("select hex(x) from v where id = 5", [])
+    harness::expect_str("embedded NUL: bytes as SQLite stores them", harness::text_cell(nul, 0, 0), "610062000063")
+    param = db.query("select ? = x from v where id = 1", [sqlite::value::text("héllo wörld")])
+    harness::expect_int("unicode: SQLite compares our bound text equal", harness::int_cell(param, 0, 0), 1)
+    db.close()
+
+fn t_blob() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    setup(db)
+    put(db, 1, sqlite::value::blob(ramp()))
+    put(db, 2, sqlite::value::blob(std::abi::bytes::from_list([])))
+    put(db, 3, sqlite::value::blob(blob_of([0, 0, 0])))
+    rows = db.query("select x, length(x), typeof(x) from v order by id", [])
+    harness::check("blob: all 256 byte values round-trip", harness::blob_cell(rows, 0, 0) == ramp())
+    harness::expect_int("blob: SQLite length", harness::int_cell(rows, 0, 1), 256)
+    harness::check("blob: empty blob round-trips empty", harness::blob_cell(rows, 1, 0) == std::abi::bytes::from_list([]))
+    harness::expect_str("blob: empty blob is a BLOB, not NULL", harness::text_cell(rows, 1, 2), "blob")
+    harness::expect_int("blob: empty blob length", harness::int_cell(rows, 1, 1), 0)
+    harness::check("blob: zero bytes are data", harness::blob_cell(rows, 2, 0) == blob_of([0, 0, 0]))
+    hex = db.query("select substr(hex(x), 1, 12), substr(hex(x), 509, 4) from v where id = 1", [])
+    harness::expect_str("blob: first bytes as SQLite stores them", harness::text_cell(hex, 0, 0), "000102030405")
+    harness::expect_str("blob: last bytes as SQLite stores them", harness::text_cell(hex, 0, 1), "FEFF")
+    db.close()
+
+fn t_integers() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    setup(db)
+    put(db, 1, sqlite::value::integer(9223372036854775807))
+    put(db, 2, sqlite::value::integer(-9223372036854775808))
+    put(db, 3, sqlite::value::integer(0))
+    put(db, 4, sqlite::value::integer(-1))
+    put(db, 5, sqlite::value::integer(4294967296))
+    rows = db.query("select x, typeof(x) from v order by id", [])
+    harness::expect_int("int64: max", harness::int_cell(rows, 0, 0), 9223372036854775807)
+    harness::expect_int("int64: min", harness::int_cell(rows, 1, 0), -9223372036854775808)
+    harness::expect_int("int64: zero", harness::int_cell(rows, 2, 0), 0)
+    harness::expect_int("int64: minus one", harness::int_cell(rows, 3, 0), -1)
+    harness::expect_int("int64: 2^32 (above int32)", harness::int_cell(rows, 4, 0), 4294967296)
+    harness::expect_str("int64: stored as INTEGER", harness::text_cell(rows, 0, 1), "integer")
+    one_past = db.query("select 9223372036854775807 + 1, typeof(9223372036854775807 + 1)", [])
+    harness::expect_str("int64: SQLite overflows into REAL, not wrap-around", harness::text_cell(one_past, 0, 1), "real")
+    sql_text = db.query("select cast(x as text) from v where id = 2", [])
+    harness::expect_str("int64: SQLite renders min as text", harness::text_cell(sql_text, 0, 0), "-9223372036854775808")
+    beyond = std::int::from_string("9223372036854775808"):
+        on InvalidIntegerText:
+            0
+    big = sqlite::value::integer_of(beyond):
+        on sqlite::value::IntegerOutOfRange:
+            sqlite::value::null()
+    harness::check("int64: 2^63 is refused by the constructor", big.null?())
+    ok = sqlite::value::integer_of(-9223372036854775808):
+        on sqlite::value::IntegerOutOfRange:
+            sqlite::value::null()
+    harness::check("int64: -2^63 is accepted by the constructor", not ok.null?())
+    db.close()
+
+fn t_reals() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    setup(db)
+    put(db, 1, sqlite::value::real(1.7976931348623157e308))
+    put(db, 2, sqlite::value::real(5.0e-324))
+    put(db, 3, sqlite::value::real(2.2250738585072014e-308))
+    put(db, 4, sqlite::value::real(-2.5))
+    put(db, 5, sqlite::value::real(0.1))
+    put(db, 6, sqlite::value::real(0.0))
+    rows = db.query("select x, typeof(x) from v order by id", [])
+    harness::check("real: largest finite double", harness::real_cell(rows, 0, 0) == 1.7976931348623157e308)
+    harness::check("real: smallest subnormal", harness::real_cell(rows, 1, 0) == 5.0e-324)
+    harness::check("real: smallest normal", harness::real_cell(rows, 2, 0) == 2.2250738585072014e-308)
+    harness::check("real: negative", harness::real_cell(rows, 3, 0) == -2.5)
+    harness::check("real: 0.1 is the nearest double, bit for bit", harness::real_cell(rows, 4, 0) == 0.1)
+    harness::expect_str("real: stored as REAL", harness::text_cell(rows, 0, 1), "real")
+    harness::expect_str("real: 0.0 stored as REAL", harness::text_cell(rows, 5, 1), "real")
+    exact = db.query("select x = 5e-324, x = 1.7976931348623157e308 from v where id in (2, 1) order by id desc", [])
+    harness::expect_int("real: SQLite agrees on the subnormal", harness::int_cell(exact, 0, 0), 1)
+    harness::expect_int("real: SQLite agrees on the maximum", harness::int_cell(exact, 1, 1), 1)
+    negzero = db.query("select -0.0, typeof(-0.0)", [])
+    harness::check("real: SQLite's -0.0 reads as 0.0 (Float64 has no negative zero)", harness::real_cell(negzero, 0, 0) == 0.0)
+    db.close()
+
+fn t_infinity() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    inf = db.query("select 9e999", []):
+        on sqlite::failure::Failure f:
+            harness::check("infinity: reading +Inf is a structured Failure of kind encoding", f.info.kind == sqlite::failure::ErrorKind::Encoding)
+            []
+    harness::expect_int("infinity: no row escaped", inf.length(), 0)
+    harness::expect_int("infinity: statement was released", sqlite::open_statements(), 0)
+    again = db.query("select typeof(9e999), 1", [])
+    harness::expect_str("infinity: SQLite still stores it as REAL", harness::text_cell(again, 0, 0), "real")
+    harness::expect_int("infinity: connection still usable", harness::int_cell(again, 0, 1), 1)
+    db.close()
+
+fn t_accessors() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    rows = db.query("select 'text', 7, null", [])
+    row = harness::row_at(rows, 0)
+    as_int = row.integer_at(0):
+        on sqlite::value::ColumnError e:
+            harness::check("accessor: integer of TEXT is WrongType", e.problem == sqlite::value::ColumnProblem::WrongType and e.expected == sqlite::value::Kind::Integer and e.actual == sqlite::value::Kind::Text)
+            0
+    as_text = row.text_at(2):
+        on sqlite::value::ColumnError e:
+            harness::check("accessor: text of NULL is WrongType with actual NULL", e.actual == sqlite::value::Kind::Null)
+            ""
+    past = row.integer_at(9):
+        on sqlite::value::ColumnError e:
+            harness::check("accessor: index past the row is NoSuchColumn", e.problem == sqlite::value::ColumnProblem::NoSuchColumn)
+            0
+    nameless = row.named("nope"):
+        on sqlite::value::ColumnError e:
+            harness::check("accessor: unknown name is NoSuchName", e.problem == sqlite::value::ColumnProblem::NoSuchName)
+            sqlite::value::null()
+    third = row.column(2):
+        on sqlite::value::ColumnError:
+            sqlite::value::text("unreachable")
+    harness::expect_int("accessor: a NULL read with an explicit default", third.integer_or(41), 41)
+    db.close()
+
+fn run_all() -> unit:
+    t_null():
+        on sqlite::failure::Failure f:
+            harness::unexpected("null", sqlite::failure::describe(f.info))
+    t_unicode():
+        on sqlite::failure::Failure f:
+            harness::unexpected("unicode", sqlite::failure::describe(f.info))
+    t_blob():
+        on sqlite::failure::Failure f:
+            harness::unexpected("blob", sqlite::failure::describe(f.info))
+    t_integers():
+        on sqlite::failure::Failure f:
+            harness::unexpected("integers", sqlite::failure::describe(f.info))
+    t_reals():
+        on sqlite::failure::Failure f:
+            harness::unexpected("reals", sqlite::failure::describe(f.info))
+    t_infinity():
+        on sqlite::failure::Failure f:
+            harness::unexpected("infinity", sqlite::failure::describe(f.info))
+    t_accessors():
+        on sqlite::failure::Failure f:
+            harness::unexpected("accessors", sqlite::failure::describe(f.info))
+    harness::expect_int("no connection leaked", sqlite::open_connections(), 0)
+    harness::finish()
+
+with context harness::tally()
+with context sqlite::engine()
+run_all()

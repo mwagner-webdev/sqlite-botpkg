@@ -1,0 +1,157 @@
+# ac_errors -- the failure contract: constraint violations (with SQLite's stable extended codes), malformed SQL,
+# wrong use of the API. After every failure the connection is usable and nothing leaked.
+import harness
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::int
+import std::list
+import std::str
+
+nomethod fn count_in(db: sqlite::Connection) -> int errors sqlite::failure::Failure:
+    rows = db.query("select count(*) from t", [])
+    harness::int_cell(rows, 0, 0)
+
+nomethod fn expect_failure(name: str, kind: sqlite::failure::ErrorKind, code: int, extended: int, f_kind: sqlite::failure::ErrorKind, f_code: int, f_extended: int, f_message: str) -> unit:
+    harness::check(name.concat(": kind"), f_kind == kind)
+    harness::expect_int(name.concat(": primary code"), f_code, code)
+    harness::expect_int(name.concat(": extended code"), f_extended, extended)
+    harness::check(name.concat(": message present"), f_message.length() > 0)
+
+fn t_constraints() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    db.execute_script("pragma foreign_keys = on; create table parent(id integer primary key); create table t(id integer primary key, u text unique, n text not null, c integer check (c >= 0), p integer references parent(id)); insert into parent values (1); insert into t(id, u, n, c, p) values (1, 'one', 'n', 1, 1);")
+    before = count_in(db)
+    db.execute("insert into t(id, u, n, c, p) values (2, 'one', 'n', 1, 1)", []):
+        on sqlite::failure::Failure f:
+            expect_failure("unique", sqlite::failure::ErrorKind::Constraint, 19, 2067, f.info.kind, f.info.code, f.info.extended, f.info.message)
+            0
+    db.execute("insert into t(id, u, n, c, p) values (1, 'two', 'n', 1, 1)", []):
+        on sqlite::failure::Failure f:
+            expect_failure("primary key", sqlite::failure::ErrorKind::Constraint, 19, 1555, f.info.kind, f.info.code, f.info.extended, f.info.message)
+            0
+    db.execute("insert into t(id, u, n, c, p) values (3, 'three', ?, 1, 1)", [sqlite::value::null()]):
+        on sqlite::failure::Failure f:
+            expect_failure("not null (bound NULL)", sqlite::failure::ErrorKind::Constraint, 19, 1299, f.info.kind, f.info.code, f.info.extended, f.info.message)
+            0
+    db.execute("insert into t(id, u, n, c, p) values (4, 'four', 'n', ?, 1)", [sqlite::value::integer(-1)]):
+        on sqlite::failure::Failure f:
+            expect_failure("check", sqlite::failure::ErrorKind::Constraint, 19, 275, f.info.kind, f.info.code, f.info.extended, f.info.message)
+            0
+    db.execute("insert into t(id, u, n, c, p) values (5, 'five', 'n', 1, 99)", []):
+        on sqlite::failure::Failure f:
+            expect_failure("foreign key", sqlite::failure::ErrorKind::Constraint, 19, 787, f.info.kind, f.info.code, f.info.extended, f.info.message)
+            0
+    harness::expect_int("constraints: no partial row was written", count_in(db), before)
+    harness::expect_int("constraints: no statement leaked", sqlite::open_statements(), 0)
+    harness::check("constraints: not stuck in a transaction", not db.in_transaction?())
+    ok = db.execute("insert into t(id, u, n, c, p) values (6, 'six', 'n', 1, 1)", [])
+    harness::expect_int("constraints: the connection still works", ok, 1)
+    db.close()
+
+fn t_invalid_sql() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    db.execute("create table t(x integer)", [])
+    db.execute("selec 1", []):
+        on sqlite::failure::Failure f:
+            expect_failure("syntax error", sqlite::failure::ErrorKind::SqlError, 1, 1, f.info.kind, f.info.code, f.info.extended, f.info.message)
+            harness::expect_str("syntax error: reported while preparing", f.info.operation, "prepare")
+            0
+    db.query("select * from no_such_table", []):
+        on sqlite::failure::Failure f:
+            harness::check("missing table: sql-error", f.info.kind == sqlite::failure::ErrorKind::SqlError)
+            []
+    db.query("select nope from t", []):
+        on sqlite::failure::Failure f:
+            harness::check("missing column: sql-error", f.info.kind == sqlite::failure::ErrorKind::SqlError)
+            []
+    db.execute("insert into t values (?, ?)", [sqlite::value::integer(1)]):
+        on sqlite::failure::Failure f:
+            harness::check("wrong parameter count (too few): SQLite rejects the statement", f.info.kind == sqlite::failure::ErrorKind::SqlError)
+            0
+    db.execute("insert into t values (?)", [sqlite::value::integer(1), sqlite::value::integer(2)]):
+        on sqlite::failure::Failure f:
+            harness::check("wrong parameter count (too many): misuse", f.info.kind == sqlite::failure::ErrorKind::Misuse)
+            0
+    db.execute("insert into t values (?)", []):
+        on sqlite::failure::Failure f:
+            harness::check("wrong parameter count (none given): misuse", f.info.kind == sqlite::failure::ErrorKind::Misuse)
+            0
+    db.execute("", []):
+        on sqlite::failure::Failure f:
+            harness::check("empty SQL: misuse, not a crash", f.info.kind == sqlite::failure::ErrorKind::Misuse)
+            0
+    db.execute_script("create table broken("):
+        on sqlite::failure::Failure f:
+            harness::check("script with a syntax error fails", f.info.kind == sqlite::failure::ErrorKind::SqlError)
+            unit
+    harness::expect_int("invalid sql: no statement leaked", sqlite::open_statements(), 0)
+    done = db.execute("insert into t values (?)", [sqlite::value::integer(7)])
+    harness::expect_int("invalid sql: the connection still works", done, 1)
+    harness::expect_int("invalid sql: and sees only the good row", count_in(db), 1)
+    db.close()
+
+fn t_handle_misuse() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    db.execute("create table t(x)", [])
+    st = db.prepare("select x from t")
+    st.finalize()
+    st.step():
+        on sqlite::failure::Failure f:
+            harness::check("misuse: stepping a finalized statement", f.info.kind == sqlite::failure::ErrorKind::Misuse)
+            false
+    st.finalize():
+        on sqlite::failure::Failure f:
+            harness::check("misuse: finalizing twice", f.info.kind == sqlite::failure::ErrorKind::Misuse)
+            unit
+    live = db.prepare("select x from t")
+    db.close()
+    harness::expect_int("misuse: closing the connection finalized its statement", sqlite::open_statements(), 0)
+    live.step():
+        on sqlite::failure::Failure f:
+            harness::check("misuse: a statement whose connection closed is invalid", f.info.kind == sqlite::failure::ErrorKind::Misuse)
+            false
+    db.close():
+        on sqlite::failure::Failure f:
+            harness::check("misuse: closing twice", f.info.kind == sqlite::failure::ErrorKind::Misuse)
+            unit
+    db.prepare("select 1"):
+        on sqlite::failure::Failure f:
+            harness::check("misuse: preparing on a closed connection", f.info.kind == sqlite::failure::ErrorKind::Misuse)
+            live
+    db.execute("select 1", []):
+        on sqlite::failure::Failure f:
+            harness::check("misuse: executing on a closed connection", f.info.kind == sqlite::failure::ErrorKind::Misuse)
+            0
+    harness::expect_int("misuse: nothing leaked", sqlite::open_connections() + sqlite::open_statements(), 0)
+
+fn t_describe() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    text = db.execute("selec 1", []):
+        on sqlite::failure::Failure f:
+            0
+    harness::check("describe: kinds have stable names", sqlite::failure::kind_name(sqlite::failure::ErrorKind::Busy) == "busy" and sqlite::failure::kind_name(sqlite::failure::ErrorKind::Constraint) == "constraint")
+    harness::check("classify: extended codes classify by their primary code", sqlite::failure::classify(2067) == sqlite::failure::ErrorKind::Constraint and sqlite::failure::classify(261) == sqlite::failure::ErrorKind::Busy and sqlite::failure::classify(5) == sqlite::failure::ErrorKind::Busy)
+    harness::check("classify: io", sqlite::failure::classify(522) == sqlite::failure::ErrorKind::Io)
+    harness::check("classify: locked", sqlite::failure::classify(262) == sqlite::failure::ErrorKind::Locked)
+    db.close()
+
+fn run_all() -> unit:
+    t_constraints():
+        on sqlite::failure::Failure f:
+            harness::unexpected("constraints", sqlite::failure::describe(f.info))
+    t_invalid_sql():
+        on sqlite::failure::Failure f:
+            harness::unexpected("invalid_sql", sqlite::failure::describe(f.info))
+    t_handle_misuse():
+        on sqlite::failure::Failure f:
+            harness::unexpected("handle_misuse", sqlite::failure::describe(f.info))
+    t_describe():
+        on sqlite::failure::Failure f:
+            harness::unexpected("describe", sqlite::failure::describe(f.info))
+    harness::expect_int("no connection leaked", sqlite::open_connections(), 0)
+    harness::finish()
+
+with context harness::tally()
+with context sqlite::engine()
+run_all()
