@@ -1,0 +1,115 @@
+name: ci
+
+# sqlite-botpkg milestone 1.
+#
+#   compiler-macos   builds the Botlish compiler for macOS arm64 from the pinned upstream commit (Botlish.app)
+#   native-linux     builds the pinned SQLite amalgamation into libbotsqlite3.a on Linux x86-64
+#   native-macos     the same on macOS arm64 (Apple clang)
+#
+# The pinned compiler is upstream commit cdb751b (the single-file Linux build with the same SHA-256 is
+# the published `single-latest` asset of 2026-11-12).
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+  BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+  BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  compiler-macos:
+    name: Botlish compiler for macOS arm64 (built from the pinned source)
+    runs-on: macos-15
+    timeout-minutes: 150
+    steps:
+      - name: Host
+        run: |
+          sw_vers; uname -a
+          echo "CPUs: $(sysctl -n hw.ncpu), memory: $(sysctl -n hw.memsize), Xcode: $(xcode-select -p), SDK $(xcrun --show-sdk-version)"
+          [[ $(uname -s) == Darwin && $(uname -m) == arm64 ]] || { echo "::error::not a native arm64 macOS runner"; exit 1; }
+          [[ $(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0) != 1 ]] || { echo "::error::running under Rosetta"; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          repository: mwagner-webdev/botlish
+          ref: ${{ env.BOTLISH_REV }}
+          path: botlish-src
+      - name: Cache the Tcl 9.0.1 build
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/botlish/tcl-9.0.1
+          key: tcl-9.0.1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('botlish-src/tests/platform/setup-macos.sh') }}
+      - name: Install Tcl 9.0.1 and stable Rust
+        working-directory: botlish-src
+        run: tests/platform/setup-macos.sh "$GITHUB_PATH"
+      - name: Cache the native backend build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            botlish-src/native/target
+          key: native-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('botlish-src/native/Cargo.lock') }}
+          restore-keys: native-cargo-${{ runner.os }}-${{ runner.arch }}-
+      - name: Build the native backend (test-suite flavour, needed by build.sh's runtime-archive check)
+        working-directory: botlish-src
+        run: cargo build --release --manifest-path native/Cargo.toml
+      - name: Cache the Tcl.framework build
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/botlish-app
+          key: app-tcl-framework-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('botlish-src/single/macos/tcl-framework.sh', 'botlish-src/single/build.sh') }}
+      - name: Build Botlish.app
+        working-directory: botlish-src
+        run: single/macos/build.sh -o "$GITHUB_WORKSPACE/botlish-macos" 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+      - name: Version
+        run: |
+          botlish-macos/Botlish.app/Contents/MacOS/botlish -version
+          cat botlish-macos/botlish-macos-aarch64.zip.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: botlish-macos-aarch64
+          path: |
+            botlish-macos/botlish-macos-aarch64.zip
+            botlish-macos/botlish-macos-aarch64.zip.sha256
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compiler-macos-logs
+          path: build.log
+          if-no-files-found: warn
+
+  native-linux:
+    name: native SQLite archive (Linux x86-64)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: native/build.sh build/native/linux-x86_64
+      - run: nm build/native/linux-x86_64/libbotsqlite3.a | grep -c ' T sqlite3_'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-linux-x86_64
+          path: build/native/linux-x86_64/libbotsqlite3.a
+
+  native-macos:
+    name: native SQLite archive (macOS arm64)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          uname -a; cc --version
+          native/build.sh build/native/macos-aarch64
+      - run: |
+          lipo -info build/native/macos-aarch64/libbotsqlite3.a
+          nm build/native/macos-aarch64/libbotsqlite3.a | grep -c ' T _sqlite3_'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-macos-aarch64
+          path: build/native/macos-aarch64/libbotsqlite3.a
