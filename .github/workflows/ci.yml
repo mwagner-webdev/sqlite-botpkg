@@ -14,7 +14,9 @@ name: ci
 
 on:
   push:
+    paths-ignore: ["**.md", "audit/**"]
   pull_request:
+    paths-ignore: ["**.md", "audit/**"]
   workflow_dispatch:
 
 env:

@@ -16,7 +16,10 @@ Compiler: the host `cc` (GCC on Linux, Apple clang on macOS), `-O2 -fPIC`, one o
 | `SQLITE_DEFAULT_MEMSTATUS=0` | recommended; disables the global memory-statistics mutex. |
 | `SQLITE_LIKE_DOESNT_MATCH_BLOBS` | recommended. |
 | `SQLITE_USE_URI=0` | file names are paths, never `file:` URIs, so a path with `?` or `#` is a path. |
-| `SQLITE_ENABLE_MATH_FUNCTIONS` | `sqrt`, `pow`, ... in SQL; the only reason the package links `libm`. |
+
+Not enabled: `SQLITE_ENABLE_MATH_FUNCTIONS` (SQL `sqrt`, `pow`, ...). With it the archive needs `libm` as a *system* library, and the package manager of the pinned compiler cannot install a package declaring one on macOS
+(`PM NATIVE: verifying a system library on macos is not implemented`, found by the first macOS CI run). Without it the archive needs only libc and pthread (merged into libc since glibc 2.34; part of libSystem on macOS):
+`nm -u` lists no math symbol. The package therefore declares **no system library at all**.
 
 Maintenance policy: bump the pinned amalgamation deliberately (new zip, new SHA3-256 from sqlite.org, new
 package version); the CI jobs rebuild it on Linux and macOS and the full acceptance suite runs against it.

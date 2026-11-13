@@ -30,7 +30,6 @@ import std::mutable_vector
 import std::str
 
 extern c library "botsqlite3"
-extern c library "m"
 
 # --- the C boundary (private: nothing below is part of the package's interface) ------------------------------
 

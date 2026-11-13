@@ -19,7 +19,7 @@ CC=${CC:-cc}
 $CC -O2 -fPIC -c "$src/sqlite3.c" -o "$work/sqlite3.o" \
   -DSQLITE_THREADSAFE=1 -DSQLITE_DQS=0 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_OMIT_SHARED_CACHE \
   -DSQLITE_OMIT_DEPRECATED -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_LIKE_DOESNT_MATCH_BLOBS \
-  -DSQLITE_USE_URI=0 -DSQLITE_ENABLE_MATH_FUNCTIONS
+  -DSQLITE_USE_URI=0
 rm -f "$out/libbotsqlite3.a"
 ar rcs "$out/libbotsqlite3.a" "$work/sqlite3.o"
 cp "$src/sqlite3.h" "$out/sqlite3.h"

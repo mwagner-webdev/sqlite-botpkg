@@ -37,12 +37,10 @@ SYMS=()
 for s in $(grep -oE '^private extern c fn sqlite3_[a-z0-9_]+' "$STAGE/sqlite.bot" | awk '{print $5}' | sort -u); do SYMS+=(-symbol "$s"); done
 (cd "$STAGE" && {
   "$BOT" native add "$LINUX" -target linux-x86_64 -name botsqlite3 -license blessing -notice NOTICE-SQLITE.txt "${SYMS[@]}" >/dev/null
-  "$BOT" native require m -target linux-x86_64 -origin system >/dev/null
   if [ -n "$MACOS" ]; then
     # No -symbol checks here: the package manager's archive reader cannot read Apple ar's __.SYMDEF SORTED index
     # (it reports 0 names), so it cannot verify a Mach-O archive's exports. The macOS link in CI is the check.
     "$BOT" native add "$MACOS" -target macos-aarch64 -name botsqlite3 -license blessing -notice NOTICE-SQLITE.txt >/dev/null
-    "$BOT" native require m -target macos-aarch64 -origin system >/dev/null
   fi
   "$BOT" native audit . | tail -20
 })

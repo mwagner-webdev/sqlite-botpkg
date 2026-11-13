@@ -34,7 +34,7 @@ botlish -emit-native-executable app.bot      # no -L, no -I: the bundled archive
 * **Native only.** A program that calls C runs on the native backends: build an executable
   (`-emit-native-executable`, the only way on macOS, whose compiler distribution has no JIT) or use
   `-backend cranelift` on Linux. The Tcl backends (`interp`, `compile`) refuse the first C call (`NATIVE-ONLY`).
-* **Linux x86-64**: needs `cc` (gcc) for the link and `libm` (glibc, libc6-dev). **macOS arm64**: Xcode command-line tools.
+* **Linux x86-64**: needs `cc` (gcc) for the link and glibc 2.34 or newer (libc and pthread; no libm and no system SQLite). **macOS arm64**: Xcode command-line tools.
   macOS x86-64 is not supported by Botlish's native backend.
 * The SQLite library is bundled (`targets/linux-x86_64/native/libbotsqlite3.a`, `targets/macos-aarch64/native/libbotsqlite3.a`); no
   system SQLite is used or required. `sqlite::version()` reports the version actually linked.
@@ -155,6 +155,9 @@ symbols the package declares (`sqlite3_prepare_v2`, `sqlite3_bind_*64`, `sqlite3
 Updating SQLite means a new package version.
 
 ## Not in 0.1.0
+
+SQL math functions (`sqrt`, `pow`, …): not compiled in (see `native/FLAGS.md` for why).
+
 
 ORM/schema mapping, virtual tables, custom SQL functions, extension loading, online backup, encryption, replication, async I/O,
 connection pooling, cross-thread connection sharing, named-parameter binding by name, incremental blob I/O, Windows.
