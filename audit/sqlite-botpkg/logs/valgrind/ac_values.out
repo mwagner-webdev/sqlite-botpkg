@@ -1,0 +1,64 @@
+PASS null: stored as NULL
+PASS null: '' stored as TEXT
+PASS null: x'' stored as BLOB
+PASS null: 0 stored as INTEGER
+PASS null: 0.0 stored as REAL
+PASS null: reads back as NULL
+PASS null: empty text is not NULL
+PASS null: empty blob is not NULL
+PASS null: zero is not NULL
+PASS null: real zero is not NULL
+PASS null: kinds
+PASS null: Value equality separates NULL from '' and x''
+PASS null: SQL sees exactly one NULL
+PASS unicode: latin
+PASS unicode: CJK
+PASS unicode: astral plane
+PASS unicode: right-to-left
+PASS unicode: SQLite counts characters (CJK)
+PASS unicode: SQLite sees UTF-8 bytes (CJK)
+PASS unicode: astral characters (emoji row)
+PASS embedded NUL: round-trips
+PASS embedded NUL: SQLite holds all 6 bytes
+PASS embedded NUL: bytes as SQLite stores them
+PASS unicode: SQLite compares our bound text equal
+PASS blob: all 256 byte values round-trip
+PASS blob: SQLite length
+PASS blob: empty blob round-trips empty
+PASS blob: empty blob is a BLOB, not NULL
+PASS blob: empty blob length
+PASS blob: zero bytes are data
+PASS blob: first bytes as SQLite stores them
+PASS blob: last bytes as SQLite stores them
+PASS int64: max
+PASS int64: min
+PASS int64: zero
+PASS int64: minus one
+PASS int64: 2^32 (above int32)
+PASS int64: stored as INTEGER
+PASS int64: SQLite overflows into REAL, not wrap-around
+PASS int64: SQLite renders min as text
+PASS int64: 2^63 is refused by the constructor
+PASS int64: -2^63 is accepted by the constructor
+PASS real: largest finite double
+PASS real: smallest subnormal
+PASS real: smallest normal
+PASS real: negative
+PASS real: 0.1 is the nearest double, bit for bit
+PASS real: stored as REAL
+PASS real: 0.0 stored as REAL
+PASS real: SQLite agrees on the subnormal
+PASS real: SQLite agrees on the maximum
+PASS real: SQLite's -0.0 reads as 0.0 (Float64 has no negative zero)
+PASS infinity: reading +Inf is a structured Failure of kind encoding
+PASS infinity: no row escaped
+PASS infinity: statement was released
+PASS infinity: SQLite still stores it as REAL
+PASS infinity: connection still usable
+PASS accessor: integer of TEXT is WrongType
+PASS accessor: text of NULL is WrongType with actual NULL
+PASS accessor: index past the row is NoSuchColumn
+PASS accessor: unknown name is NoSuchName
+PASS accessor: a NULL read with an explicit default
+PASS no connection leaked
+RESULT passed=63 failed=0

@@ -1,0 +1,24 @@
+import posix
+import std::int
+import std::str
+import std::thread
+import worker
+
+fn run(context t: std::thread::Threads) -> unit errors std::thread::ThreadLimit, std::thread::ThreadStartFailed, std::thread::ThreadFailed:
+    a = std::thread::start(std::thread::entry(worker::work), 3000)
+    b = std::thread::start(std::thread::entry(worker::work), 2000)
+    {thread: ta} = a
+    {thread: tb} = b
+    ra = std::thread::join(ta)
+    rb = std::thread::join(tb)
+    posix::say("thread A inserted ".concat(std::int::to_string(ra)))
+    posix::say("thread B inserted ".concat(std::int::to_string(rb)))
+
+with context std::thread::create(4)
+run():
+    on std::thread::ThreadLimit:
+        posix::say("limit")
+    on std::thread::ThreadStartFailed {reason}:
+        posix::say("start failed")
+    on std::thread::ThreadFailed {identity, message}:
+        posix::say("thread failed: ".concat(message))

@@ -1,0 +1,23 @@
+# wallclock -- microseconds from gettimeofday(2), identical on Linux and macOS (a struct timeval is 16 bytes on both:
+# tv_sec at 0 as a 64-bit integer, tv_usec at 8 as at least its low 32 bits, little-endian).
+import std::abi
+import std::abi::bytes
+import std::binary
+import std::ffi::c
+
+extern c fn gettimeofday(tv: std::ffi::c::Ptr[std::ffi::c::Void] write noescape, tz: std::ffi::c::Ptr[std::ffi::c::Void] noescape) -> std::ffi::c::Int
+
+layout Timeval:
+    size 16
+    align 8
+    field sec: std::binary::U64 at 0
+    field usec: std::binary::U32 at 8
+
+fn micros() -> int:
+    buf = std::abi::bytes::zeroed(std::abi::usize(16))
+    notz = std::ffi::c::null[std::ffi::c::Void]()
+    got = gettimeofday(buf, notz)
+    tv = std::binary::parse(Timeval, std::abi::bytes::freeze(got.tv)):
+        on LayoutLengthMismatch:
+            LayoutStruct[Timeval] {sec: 0, usec: 0}
+    tv.sec * 1000000 + tv.usec

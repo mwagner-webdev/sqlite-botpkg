@@ -636,10 +636,11 @@ private nomethod fn names_from(ptr: std::ffi::c::Ptr[Stmt], context e: Engine) -
 # Prepares the first statement of SQL on connection slot CI and moves it into the engine's table.
 private nomethod fn prepare_raw(ci: int, sql: str, context e: Engine) -> Statement errors sqlite::failure::Failure:
     text = cstr(sql)
+    # nByte counts the NUL terminator cstr appended (sqlite.org: passing it lets the parser skip a copy)
     n = size_of(text):
         on TooBig:
             fail sqlite::failure::Failure {info: too_big("prepare")}
-    rc = c_prepare(ci, text, n + 1):
+    rc = c_prepare(ci, text, n):
         on IndexNotFound:
             fail sqlite::failure::Failure {info: stale("prepare")}
     if rc != 0:

@@ -1,0 +1,24 @@
+# Each thread is a VM of its own: it installs its own sqlite Engine and owns its own connection.
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::int
+import std::list
+
+fn fill(n: int) -> int errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    db.execute("create table t(i integer)", [])
+    loop i from 0 to n:
+        v = sqlite::value::integer_of(i):
+            on sqlite::value::IntegerOutOfRange:
+                sqlite::value::null()
+        db.execute("insert into t values (?)", [v])
+    rows = db.query("select count(*) from t", [])
+    db.close()
+    rows.length() * 0 + n
+
+thread fn work(n: int) -> int:
+    with context sqlite::engine()
+    fill(n):
+        on sqlite::failure::Failure:
+            -1

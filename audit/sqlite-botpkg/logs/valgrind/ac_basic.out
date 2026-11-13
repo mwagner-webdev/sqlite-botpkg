@@ -1,0 +1,27 @@
+PASS memory: connection is open
+PASS memory: executes SQL
+PASS memory: handle invalid after close
+PASS schema: one table created
+PASS schema: its name
+PASS schema: three columns
+PASS insert: one row changed
+PASS insert: rowid reported
+PASS select: id
+PASS select: title
+PASS select: done
+PASS select: width
+PASS select: column name
+PASS select: by name
+PASS rows: count
+PASS rows: first
+PASS rows: last square
+PASS rows: aggregate
+PASS rows: bound filter
+PASS rows: descending
+PASS reuse: first run
+PASS reuse: second run
+PASS reuse: no match is no rows
+PASS reuse: two statements live
+PASS reuse: finalized
+PASS no connection leaked
+RESULT passed=26 failed=0

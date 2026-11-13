@@ -1,0 +1,22 @@
+# Does a collecting loop that allocates scale linearly? No SQLite, no C. Prints microseconds for N, 2N, 4N elements.
+import posix
+import std::int
+import std::list
+import std::str
+import wallclock
+
+fn build(n: int) -> int:
+    xs = loop i from 0 to n:
+        "row number ".concat(std::int::to_string(i))
+    xs.length()
+
+fn timed(n: int) -> unit:
+    t = wallclock::micros()
+    got = build(n)
+    posix::say("n=".concat(std::int::to_string(got)).concat(" us=").concat(std::int::to_string(wallclock::micros() - t)))
+
+timed(20000)
+timed(40000)
+timed(80000)
+timed(160000)
+timed(320000)

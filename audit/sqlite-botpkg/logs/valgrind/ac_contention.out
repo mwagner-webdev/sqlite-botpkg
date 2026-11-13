@@ -1,0 +1,21 @@
+PASS busy: a holds a write transaction
+PASS busy: b's write fails immediately with kind busy (timeout 0)
+PASS busy: primary code SQLITE_BUSY
+PASS busy: message is present for people
+PASS busy: b's failed statement left nothing open
+PASS busy: b cannot take the write lock either
+PASS busy: and the failed begin left b outside a transaction
+PASS busy: b still reads while a writes (rollback-journal mode)
+PASS busy: with a 50 ms timeout it still ends as busy
+PASS busy: after a commits, b sees a's row
+PASS busy: and b can write again
+PASS busy: a sees both
+PASS rollback: releases the write lock
+PASS rollback: the undone row never appeared
+PASS scope exit: a failed holder released its lock by cleanup
+PASS locked: a statement is mid-iteration
+PASS locked: dropping a table that a live statement reads is kind locked
+PASS locked: primary code SQLITE_LOCKED
+PASS locked: after finalizing, the drop succeeds
+PASS no connection leaked
+RESULT passed=20 failed=0

@@ -1,0 +1,136 @@
+# bench -- a fixed, small workload to look for accidental quadratic behaviour, per-row leaks and FFI overhead.
+# Not an optimisation exercise. bench/bench.c runs the same workload through SQLite's C API directly.
+import posix
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::int
+import std::list
+import std::str
+import wallclock
+
+nomethod fn report(name: str, count: int, start: int) -> unit:
+    elapsed = wallclock::micros() - start
+    posix::say("bench ".concat(name).concat(": n=").concat(std::int::to_string(count)).concat(" total_us=").concat(std::int::to_string(elapsed)))
+
+nomethod fn int_param(i: int) -> sqlite::value::Value:
+    sqlite::value::integer_of(i):
+        on sqlite::value::IntegerOutOfRange:
+            sqlite::value::null()
+
+fn open_close(path: str, count: int) -> unit errors sqlite::failure::Failure:
+    loop i from 0 to count:
+        db = sqlite::open(path)
+        db.close()
+    unit
+
+fn insert_batched(db: sqlite::Connection, count: int) -> unit errors sqlite::failure::Failure:
+    ins = db.prepare("insert into t(a, b, c) values (?, ?, ?)")
+    tx = db.begin()
+    loop i from 0 to count:
+        ins.run([int_param(i), sqlite::value::text("row number ".concat(std::int::to_string(i))), sqlite::value::real(1.5)])
+    tx.commit()
+    ins.finalize()
+
+fn insert_autocommit(db: sqlite::Connection, count: int) -> unit errors sqlite::failure::Failure:
+    ins = db.prepare("insert into t(a, b, c) values (?, ?, ?)")
+    loop i from 0 to count:
+        ins.run([int_param(i), sqlite::value::text("row number ".concat(std::int::to_string(i))), sqlite::value::real(1.5)])
+    ins.finalize()
+
+fn insert_unprepared(db: sqlite::Connection, count: int) -> unit errors sqlite::failure::Failure:
+    tx = db.begin()
+    loop i from 0 to count:
+        db.execute("insert into t(a, b, c) values (?, ?, ?)", [int_param(i), sqlite::value::text("row number ".concat(std::int::to_string(i))), sqlite::value::real(1.5)])
+    tx.commit()
+
+fn read_all(db: sqlite::Connection) -> int errors sqlite::failure::Failure:
+    rows = db.query("select a, b, c from t", [])
+    rows.length()
+
+fn count_rows(s: sqlite::Statement, n: int) -> int errors sqlite::failure::Failure:
+    more = s.step()
+    if not more:
+        return n
+    row = s.row()
+    count_rows(s, n + 1)
+
+fn read_stepping(db: sqlite::Connection) -> int errors sqlite::failure::Failure:
+    s = db.prepare("select a, b, c from t")
+    n = count_rows(s, 0)
+    s.finalize()
+    n
+
+fn fresh(path: str) -> sqlite::Connection errors sqlite::failure::Failure:
+    a = posix::remove(path)
+    b = posix::remove(path.concat("-journal"))
+    db = sqlite::open(path)
+    db.execute("create table t(id integer primary key, a integer, b text, c real)", [])
+    db
+
+fn scale(count: int) -> unit errors sqlite::failure::Failure:
+    mem = sqlite::open_memory()
+    mem.execute("create table t(id integer primary key, a integer, b text, c real)", [])
+    s1 = wallclock::micros()
+    insert_batched(mem, count)
+    report("scale_insert", count, s1)
+    s2 = wallclock::micros()
+    got = read_all(mem)
+    report("scale_read", got, s2)
+    mem.close()
+
+fn run() -> unit errors sqlite::failure::Failure:
+    n = 20000
+    t1 = wallclock::micros()
+    open_close(":memory:", 2000)
+    report("open_close_memory", 2000, t1)
+    seed = sqlite::open("bench_oc.db")
+    seed.close()
+    t2 = wallclock::micros()
+    open_close("bench_oc.db", 1000)
+    report("open_close_file", 1000, t2)
+
+    db = fresh("bench_a.db")
+    t3 = wallclock::micros()
+    insert_batched(db, n)
+    report("insert_batched_prepared", n, t3)
+    t4 = wallclock::micros()
+    got = read_all(db)
+    report("read_query_all", got, t4)
+    t5 = wallclock::micros()
+    got2 = read_stepping(db)
+    report("read_step_row", got2, t5)
+    db.close()
+
+    db2 = fresh("bench_b.db")
+    t6 = wallclock::micros()
+    insert_unprepared(db2, 5000)
+    report("insert_batched_unprepared", 5000, t6)
+    db2.close()
+
+    db3 = fresh("bench_c.db")
+    t7 = wallclock::micros()
+    insert_autocommit(db3, 300)
+    report("insert_autocommit_file", 300, t7)
+    db3.close()
+
+    mem = sqlite::open_memory()
+    mem.execute("create table t(id integer primary key, a integer, b text, c real)", [])
+    t8 = wallclock::micros()
+    insert_autocommit(mem, n)
+    report("insert_autocommit_memory", n, t8)
+    mem.close()
+    scale(20000)
+    scale(40000)
+    scale(80000)
+    posix::say("bench leaked connections=".concat(std::int::to_string(sqlite::open_connections())).concat(" statements=").concat(std::int::to_string(sqlite::open_statements())))
+    x = posix::remove("bench_oc.db")
+    unit
+
+fn main_run() -> unit:
+    run():
+        on sqlite::failure::Failure f:
+            posix::say("FAILED ".concat(sqlite::failure::describe(f.info)))
+
+with context sqlite::engine()
+main_run()

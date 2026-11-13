@@ -1,0 +1,4 @@
+import sqlite
+
+thread fn use_it(c: sqlite::Connection) -> int:
+    0

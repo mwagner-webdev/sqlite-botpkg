@@ -1,0 +1,29 @@
+PASS commit: both writes visible
+PASS commit: content
+PASS commit: no transaction left open
+PASS rollback: the second insert violated UNIQUE
+PASS rollback: extended code is SQLITE_CONSTRAINT_UNIQUE
+PASS rollback: the first insert was undone by scope exit
+PASS rollback: only the seed remains
+PASS rollback: no transaction left open
+PASS rollback: no statement leaked
+PASS rollback: the connection works afterwards
+PASS explicit rollback: inside a transaction
+PASS explicit rollback: undone
+PASS early return without commit: rolled back by cleanup
+PASS early return: not in a transaction
+PASS falling through to commit: kept
+PASS savepoint: inner rolled back, outer committed
+PASS savepoint: inner committed into an outer that rolled back
+PASS savepoint: inner failure is a constraint
+PASS savepoint: the outer transaction is still open
+PASS savepoint: failed inner undone, outer work kept
+PASS savepoint: back in autocommit
+PASS failed commit: the reader holds a read lock
+PASS failed commit: reported as busy
+PASS failed commit: while committing
+PASS failed commit: the package rolled back; no transaction is left open
+PASS failed commit: the write did not become visible
+PASS failed commit: the connection writes again
+PASS no connection leaked
+RESULT passed=28 failed=0

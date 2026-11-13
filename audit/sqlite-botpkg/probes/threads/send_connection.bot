@@ -1,0 +1,10 @@
+# Expected: rejected at compile time -- a Connection is not Sendable, so it cannot be a thread's start value.
+import sqlite
+import std::thread
+import worker2
+
+fn go(c: sqlite::Connection, context t: std::thread::Threads) -> int errors std::thread::ThreadLimit, std::thread::ThreadStartFailed:
+    s = std::thread::start(std::thread::entry(worker2::use_it), c)
+    1
+
+0

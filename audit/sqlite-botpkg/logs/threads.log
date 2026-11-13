@@ -1,0 +1,9 @@
+$ botlish -warnings off -emit-native-executable main.bot && ./main
+thread A inserted 3000
+thread B inserted 2000
+
+$ botlish -check send_connection.bot
+== send_connection.bot (check)
+   error: /tmp/opencode/th/worker2.bot:3:17: thread fn "use_it": parameter "c" is declared sqlite::Connection, which is not sendable: it cannot be reconstructed in another VM
+sqlite::Connection is an opaque struct whose owner, module sqlite, does not declare it sendable: its fields are its owner's representation, whose meaning (a value, or an identity of one VM: a slot, a handle) only the owner knows (CORE SEMANTIC THREAD-ENTRY-SIGNATURE)
+   help: botlish -help error.thread-entry-signature

@@ -1,0 +1,25 @@
+PASS reopen: both rows survived
+PASS reopen: content
+PASS reopen: NULL survived
+PASS persist: failing transaction reports a constraint
+PASS persist: before close, rolled back rows are absent
+PASS persist: not left in a transaction
+PASS persist: after reopen, only committed rows
+PASS persist: committed row survived
+PASS read-only: reads work
+PASS read-only: a write is a read-only Failure
+PASS read-only: statement released after the failed write
+PASS open failure: missing file is cant-open
+PASS open failure: message is not empty
+PASS open failure: operation named
+PASS open failure: missing directory is cant-open
+PASS open failure: no handle leaked by failed opens
+PASS open failure: open_existing did not create the file
+PASS repeat: 300 open/insert/close cycles all persisted
+PASS repeat: contents intact
+PASS repeat: no connection left open
+PASS repeat: no statement left open
+PASS repeat: a stale handle is detected, not freed twice
+PASS repeat: a reused slot does not revive a stale handle
+PASS no connection leaked
+RESULT passed=24 failed=0

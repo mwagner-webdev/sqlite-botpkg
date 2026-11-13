@@ -1,0 +1,33 @@
+PASS early exit: three rows read
+PASS early exit: current row is the third
+PASS early exit: after reset the statement starts over
+PASS early exit: ... at the third row again
+PASS early exit: a full run after an abandoned one returns every row
+PASS early exit: finalized
+PASS early exit: abandoned mid-iteration
+PASS early exit: other statements still run (write while a read is open)
+PASS close live: statement mid-iteration
+PASS close live: three statements open
+PASS close live: close finalized all of them
+PASS close live: and the connection
+PASS close live: a's handle is stale, not dangling
+PASS close live: c's handle is stale too
+PASS close live: the freed slots are reused safely
+PASS close live: an old handle still does not alias the new statement
+PASS outlive: text survived finalize, delete and close
+PASS outlive: second row
+PASS outlive: a single row survived finalize
+PASS bind: an INSERT step completes without a row
+PASS bind: run reports the insert
+PASS bind: three rows
+PASS bind: the rebound text won, the first was never stored
+PASS bind: empty blob bound as BLOB
+PASS bind: after reset, a fresh binding
+PASS bind: NULL bound as NULL
+PASS bind: run's text
+PASS growth: one statement served 2000 runs
+PASS growth: 500 one-shot queries left no statement behind
+PASS growth: all inserts landed
+PASS no connection leaked
+PASS no statement leaked
+RESULT passed=32 failed=0

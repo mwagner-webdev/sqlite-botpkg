@@ -1,0 +1,43 @@
+# posix -- the few POSIX calls the acceptance programs need, over libc, identical on Linux and macOS.
+#
+# A Botlish program installs a *platform* I/O context to print (std::linux::io or std::darwin::io, and the
+# namespace of the other OS is rejected at compile time), cannot choose its exit status, and has no portable
+# file removal. So the programs print with write(2), remove files with unlink(2) and set their exit status with
+# _exit(2): one source file for both platforms (audit/sqlite-botpkg/repros: F-01, F-02).
+import std::abi
+import std::abi::bytes
+import std::byte
+import std::list
+import std::ffi::c
+import std::str
+
+extern c fn write(fd: std::ffi::c::Int, buf: std::ffi::c::Ptr[std::ffi::c::Char] read noescape, n: std::ffi::c::ULong) -> std::ffi::c::Long
+extern c fn unlink(path: std::ffi::c::Ptr[std::ffi::c::Char] read noescape) -> std::ffi::c::Int
+extern c fn _exit(status: std::ffi::c::Int) -> unit
+
+fn nul() -> std::byte::Byte:
+    0
+
+fn nl() -> std::byte::Byte:
+    10
+
+fn write_all(data: std::abi::bytes::Bytes) -> int:
+    n = std::abi::bytes::length(data).value
+    write(1, data, n)
+
+# TEXT and a newline on standard output (unbuffered: it is out before a later crash).
+fn say(text: str) -> unit:
+    data = std::abi::bytes::from_list(std::str::encode_utf8(text).append(nl()))
+    written = write_all(data)
+    unit
+
+# Removes the file; true when it existed.
+fn remove(path: str) -> bool:
+    name = std::abi::bytes::from_list(std::str::encode_utf8(path).append(nul()))
+    unlink(name) == 0
+
+# Ends the process now with STATUS (0 or 1).
+fn die(status: int) -> unit:
+    if status == 0:
+        return _exit(0)
+    _exit(1)

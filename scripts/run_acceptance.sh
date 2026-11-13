@@ -11,7 +11,7 @@ BOT=${BOT:-$ROOT/botlish}
 PKG=$(cd "$(dirname "${1:?usage: run_acceptance.sh PACKAGE.botpkg [WORKDIR]}")" && pwd)/$(basename "$1")
 W=${2:-$ROOT/build/consumer-run}
 ORACLE=${ORACLE:-$ROOT/build/oracle/sqlite3}
-rm -rf "$W" && mkdir -p "$W"
+rm -rf "$W" && mkdir -p "$W" && W=$(cd "$W" && pwd)
 cp "$ROOT"/consumer/*.bot "$W"/ && cp -r "$ROOT/consumer/apps" "$W/apps"
 cd "$W"
 echo "== platform: $(uname -srm)"

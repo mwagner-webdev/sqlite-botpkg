@@ -1,0 +1,53 @@
+PASS unique: kind
+PASS unique: primary code
+PASS unique: extended code
+PASS unique: message present
+PASS primary key: kind
+PASS primary key: primary code
+PASS primary key: extended code
+PASS primary key: message present
+PASS not null (bound NULL): kind
+PASS not null (bound NULL): primary code
+PASS not null (bound NULL): extended code
+PASS not null (bound NULL): message present
+PASS check: kind
+PASS check: primary code
+PASS check: extended code
+PASS check: message present
+PASS foreign key: kind
+PASS foreign key: primary code
+PASS foreign key: extended code
+PASS foreign key: message present
+PASS constraints: no partial row was written
+PASS constraints: no statement leaked
+PASS constraints: not stuck in a transaction
+PASS constraints: the connection still works
+PASS syntax error: kind
+PASS syntax error: primary code
+PASS syntax error: extended code
+PASS syntax error: message present
+PASS syntax error: reported while preparing
+PASS missing table: sql-error
+PASS missing column: sql-error
+PASS wrong parameter count (too few): SQLite rejects the statement
+PASS wrong parameter count (too many): misuse
+PASS wrong parameter count (none given): misuse
+PASS empty SQL: misuse, not a crash
+PASS script with a syntax error fails
+PASS invalid sql: no statement leaked
+PASS invalid sql: the connection still works
+PASS invalid sql: and sees only the good row
+PASS misuse: stepping a finalized statement
+PASS misuse: finalizing twice
+PASS misuse: closing the connection finalized its statement
+PASS misuse: a statement whose connection closed is invalid
+PASS misuse: closing twice
+PASS misuse: preparing on a closed connection
+PASS misuse: executing on a closed connection
+PASS misuse: nothing leaked
+PASS describe: kinds have stable names
+PASS classify: extended codes classify by their primary code
+PASS classify: io
+PASS classify: locked
+PASS no connection leaked
+RESULT passed=52 failed=0

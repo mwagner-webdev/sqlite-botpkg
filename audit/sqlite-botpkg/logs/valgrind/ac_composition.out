@@ -1,0 +1,13 @@
+PASS shared: task ids are independent of the kv table
+PASS shared: two tasks
+PASS shared: kv upsert kept the last value
+PASS shared: one key
+PASS shared: complete_all ran in one transaction
+PASS shared: nothing pending
+PASS shared: a missing key is the NotFound error, not an empty value
+PASS separate: two connections open at once
+PASS separate: the task database holds no kv table
+PASS separate: ... and it is empty of one
+PASS separate: tasks persisted
+PASS no connection leaked
+RESULT passed=12 failed=0
