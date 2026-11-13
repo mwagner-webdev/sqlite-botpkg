@@ -1,0 +1,16 @@
+opaque resource struct Guard:
+    id: int
+
+error Busy
+
+cleanup fn drop(g: Guard):
+    {id} = g
+    unit
+
+fn acquire(n: int) -> Guard errors Busy:
+    if n > 1:
+        fail Busy
+    Guard {id: n}
+
+fn release(g: Guard) -> unit:
+    drop(g)

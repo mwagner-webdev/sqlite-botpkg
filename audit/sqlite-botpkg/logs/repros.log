@@ -1,0 +1,60 @@
+
+$ botlish -check f01_portable_stdout.bot
+== f01_portable_stdout.bot (check)
+   error: f01_portable_stdout.bot:5:8: namespace "std::darwin::io" belongs to the macOS platform (the standard namespace std::darwin and every namespace under it), which is unavailable for target linux-x86_64 (Linux on x86_64): a macOS module is never chosen for, mapped to or substituted on another operating system, whatever the architecture; compile for a macOS target (-target macos-x86_64) or import no macOS namespace (SURFACE MODULE UNSUPPORTED-PLATFORM)
+   help: botlish -help error.unsupported-platform
+
+$ botlish -check -target macos-aarch64 f01_portable_stdout.bot
+== f01_portable_stdout.bot (check)
+   ok
+
+$ botlish -check f03_payload_enum.bot
+== f03_payload_enum.bot (check)
+   error: f03_payload_enum.bot:5:12: enum case "Integer" cannot take a parameter list: a case is written as a bare name (payload-bearing cases are not supported) (SURFACE SYNTAX)
+   help: botlish -help error.surface-syntax
+
+$ botlish -check main.bot
+== main.bot (check)
+   error: main.bot:8:23: `h` was used after its affine value was moved
+
+moved here:
+    h passed to handle::id_of  (main.bot:7:23)
+
+used here:
+    main.bot:8:23 (CORE SEMANTIC USE-AFTER-MOVE)
+
+$ botlish -check f05_null_fnptr.bot
+== f05_null_fnptr.bot (check)
+   error: f05_null_fnptr.bot:5:17: function result does not prove declared type std::ffi::c::FnPtr[Fn{args: [std::ffi::c::Ptr[std::ffi::c::Void]], return: unit}] (result type: cptr) (CORE SEMANTIC TYPE)
+   help: botlish -help rule.type-result
+   error: f05_null_fnptr.bot:6:5: std::ffi::c::null: T is imprinted as Fn{args: [std::ffi::c::Ptr[std::ffi::c::Void]], return: unit, errors: []}, which cannot be a pointee: Fn{args: [std::ffi::c::Ptr[std::ffi::c::Void]], return: unit, errors: []} has no C representation: a pointee is std::ffi::c::Void, a C integer scalar, std::ffi::c::Bool, std::ffi::c::Float, std::ffi::c::Double, an opaque struct or another pointer (CORE SEMANTIC IMPRINT)
+   help: botlish -help error.imprint
+
+$ botlish -backend cranelift f08_context_int.bot
+== f08_context_int.bot (cranelift)
+   error: f08_context_int.bot:9:1: CONTEXT-NATIVE-LOWERING-UNSUPPORTED: context Ident cannot currently be stored in a fixed native context slot because field "id" is an Int (int) whose declared domain does not fit the small-Int representation, so its value may be a heap-allocated big integer that fixed program data could not keep alive (no GC root) (NATIVE UNSUPPORTED CONTEXT-NATIVE-LOWERING-UNSUPPORTED)
+   help: botlish -help error.native-unsupported
+
+$ botlish -backend cranelift f08b_context_int_domain.bot
+== f08b_context_int_domain.bot (cranelift)
+   value: 5
+
+$ botlish -check f09_error_keyword_module.bot
+== f09_error_keyword_module.bot (check)
+   error: f09_error_keyword_module.bot:3:16: expected a namespace name after "::", found "error" (SURFACE SYNTAX)
+   help: botlish -help error.surface-syntax
+
+$ botlish -check f10_error_payload_type.bot
+== f10_error_payload_type.bot (check)
+   error: f10_error_payload_type.bot:6:12: unknown or invalid type Failure for parameter "f": core::type: unknown type "Failure" (CORE SEMANTIC TYPE)
+   help: botlish -help rule.type-annotation
+
+$ botlish -check f13_affine_handler.bot
+== f13_affine_handler.bot (check)
+   error: f13_affine_handler.bot:11:22: `h` is not definitely live here: its affine value was moved on some path reaching this use
+
+moved here:
+    h moved into the value of an if or handler  (f13_affine_handler.bot:9:13)
+
+used here:
+    f13_affine_handler.bot:11:22 (CORE SEMANTIC AFFINE-NOT-DEFINITELY-LIVE)

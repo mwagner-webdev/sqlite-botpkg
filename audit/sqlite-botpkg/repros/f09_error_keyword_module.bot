@@ -1,0 +1,5 @@
+# F-09: `error` is a keyword, so a module cannot be named `error` (or have it as a path segment): sqlite::error is unusable.
+# Expected: SURFACE SYNTAX "expected a namespace name after ::, found error".
+import sqlite::error
+
+0

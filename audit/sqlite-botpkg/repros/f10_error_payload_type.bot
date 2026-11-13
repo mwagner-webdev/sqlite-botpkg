@@ -1,0 +1,9 @@
+# F-10: an error's payload struct has no nameable type, so a helper cannot take "the payload of Failure".
+# Expected: TYPE unknown type "Failure".
+error Failure:
+    code: int
+
+fn describe(f: Failure) -> int:
+    f.code
+
+0

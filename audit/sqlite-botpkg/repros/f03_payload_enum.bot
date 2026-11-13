@@ -1,0 +1,8 @@
+# F-03: no payload-carrying enum cases, no Option/Maybe: a sum type like SQLite's Value cannot be written directly.
+# Expected: SURFACE SYNTAX "payload-bearing cases are not supported".
+enum Value:
+    Null,
+    Integer(int),
+    Text(str)
+
+0

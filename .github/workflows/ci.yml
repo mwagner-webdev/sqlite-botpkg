@@ -179,12 +179,29 @@ jobs:
         run: scripts/fetch_oracle.sh build/oracle
       - name: Acceptance suite
         run: BOT=$PWD/botlish scripts/run_acceptance.sh dist/sqlite-0.1.0.botpkg 2>&1 | tee acceptance-linux.log
+      - name: Memory check of the C boundary (valgrind memcheck over the acceptance executables)
+        run: |
+          sudo apt-get install -y valgrind >/dev/null
+          scripts/valgrind.sh "$PWD/build/consumer-run" "$PWD/build/valgrind" 2>&1 | tee valgrind-linux.log
+      - name: Benchmark (Botlish package, and the same workload through the C API)
+        run: |
+          cd build/consumer-run
+          "$GITHUB_WORKSPACE/botlish" -emit-native-executable bench.bot >/dev/null
+          ./bench | tee "$GITHUB_WORKSPACE/bench-botlish-linux.log"
+          cd "$GITHUB_WORKSPACE"
+          native/build.sh build/native-c >/dev/null
+          cc -O2 -o build/bench_c bench/bench.c -Ibuild/native-c build/native-c/libbotsqlite3.a -lm -lpthread
+          (cd build && ./bench_c) | tee bench-c-linux.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: acceptance-linux-x86_64
           path: |
             acceptance-linux.log
+            valgrind-linux.log
+            bench-botlish-linux.log
+            bench-c-linux.log
+            build/valgrind/*
             build/consumer-run/*.log
 
   macos-acceptance:
@@ -224,11 +241,18 @@ jobs:
         run: |
           cd build/consumer-run
           file ac_basic; lipo -archs ac_basic; otool -L ac_basic
+      - name: Benchmark (informational; same workload as on Linux)
+        if: always()
+        run: |
+          cd build/consumer-run
+          "$BOT" -emit-native-executable bench.bot >/dev/null
+          ./bench | tee "$GITHUB_WORKSPACE/bench-botlish-macos.log"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: acceptance-macos-aarch64
           path: |
             acceptance-macos.log
+            bench-botlish-macos.log
             build/consumer-run/*.log
 

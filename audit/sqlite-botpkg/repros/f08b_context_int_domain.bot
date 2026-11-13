@@ -1,0 +1,11 @@
+# F-08 workaround: the same context with a declared domain that fits the small-Int representation runs.
+type Small = Int in 0..4503599627370495
+
+context struct Ident:
+    id: Small
+
+fn get(context i: Ident) -> int:
+    i.id
+
+with context Ident {id: 5}
+get()

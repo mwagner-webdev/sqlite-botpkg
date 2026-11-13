@@ -1,0 +1,33 @@
+$ uname -a
+Linux CompName 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+$ cat /etc/os-release | head -2
+PRETTY_NAME="Ubuntu 24.04.3 LTS"
+NAME="Ubuntu"
+$ ./botlish -version
+Botlish compiler (no release version; this is a development build)
+source revision: cdb751b, packaged
+front end: 18f05c733c33599f-5527019
+Tcl: 9.0.1
+native backend: packaged (ca1074e8-12339488-dbc87fcc-1559088-f828eab9-17967240)
+native JIT: available
+invocation: botlish
+$ sha256sum botlish
+e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba  botlish
+$ gcc --version | head -1
+gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+$ ld --version | head -1
+GNU ld (GNU Binutils for Ubuntu) 2.42
+$ valgrind --version
+valgrind-3.22.0
+$ nproc; free -m | head -2
+12
+               total        used        free      shared  buff/cache   available
+Mem:           15911        2677       12520           4         949       13233
+$ lscpu | grep Model
+Model name:                           Intel(R) Xeon(R) E-2176G CPU @ 3.70GHz
+$ sqlite3 oracle
+3.54.1 2026-10-16 14:45:20 555e07ef33f69a0957d24d8e555b702464a131d6f1607f4c3c1e4551e8e6ca76 (64-bit)
+$ sha256sum native archive
+8add430d9b2722f49b361212b2f28e53589316107abcf87ee6f19d52a32bd2ec  build/native/linux-x86_64/libbotsqlite3.a
+$ nm: exported sqlite3_ functions
+265

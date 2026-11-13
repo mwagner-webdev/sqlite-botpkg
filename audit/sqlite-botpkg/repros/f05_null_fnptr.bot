@@ -1,0 +1,8 @@
+# F-05: a NULL function pointer (C's SQLITE_STATIC / a NULL destructor / callback) cannot be made: null[T] only takes data pointees.
+# Expected: IMPRINT "... has no C representation".
+import std::ffi::c
+
+fn no_destructor() -> std::ffi::c::FnPtr[Fn{args: [std::ffi::c::Ptr[std::ffi::c::Void]], return: unit}]:
+    std::ffi::c::null[Fn{args: [std::ffi::c::Ptr[std::ffi::c::Void]], return: unit}]()
+
+0

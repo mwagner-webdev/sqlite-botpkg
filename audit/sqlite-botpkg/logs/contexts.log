@@ -1,0 +1,24 @@
+contextstruct sqlite::Engine opaque
+contextinstall e5461 sqlite::Engine
+contextparam e1360 e sqlite::Engine
+contextparam e1378 e sqlite::Engine
+contextparam e1408 e sqlite::Engine
+contextparam e1434 e sqlite::Engine
+contextparam e1446 e sqlite::Engine
+contextparam e1477 e sqlite::Engine
+contextparam e1489 e sqlite::Engine
+contextparam e1520 e sqlite::Engine
+contextparam e1548 e sqlite::Engine
+contextparam e1582 e sqlite::Engine
+== ac_composition.bot (interp)
+module sqlite::failure: ordinary (declared ordinary, inferred ordinary)
+module std::abi: ordinary (declared ordinary, inferred ordinary)
+module std::byte: ordinary (declared ordinary, inferred ordinary)
+module std::abi::bytes: ordinary (declared ordinary, inferred ordinary)
+module std::list: ordinary (declared ordinary, inferred ordinary)
+module sqlite::value: ordinary (declared ordinary, inferred ordinary)
+module std::binary: ordinary (declared ordinary, inferred ordinary)
+module std::ffi::c: ordinary (declared ordinary, inferred ordinary)
+module sqlite: contextualized (declared ordinary, inferred ordinary)
+    sqlite::db_message -> sqlite::sqlite3_errmsg, a C function whose contract lets it retain pointer authority past the call (parameter "db": escape unknown) (a retaining C call, /home/markus/sqlite-cleanroom/build/vg/.bot_modules/.targets/linux-x86_64/sqlite/sqlite.bot:263:9): mediated by sqlite::Engine
+    sqlite::db_extended -> sqlite::sqlite3_extended_errcode, a C function whose contract lets it retain pointer authority past the call (parameter "db": escape unknown) (a retaining C call, /home/markus/sqlite-cleanroom/build/vg/.bot_modules/.targets/linux-x86_64/sqlite/sqlite.bot:267:5): mediated by sqlite::Engine

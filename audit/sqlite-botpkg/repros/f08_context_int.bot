@@ -1,0 +1,10 @@
+# F-08: an installed context cannot hold an unbounded `int` field on the native backends.
+# Expected on cranelift: CONTEXT-NATIVE-LOWERING-UNSUPPORTED ("does not fit the small-Int representation").
+context struct Ident:
+    id: int
+
+fn get(context i: Ident) -> int:
+    i.id
+
+with context Ident {id: 5}
+get()

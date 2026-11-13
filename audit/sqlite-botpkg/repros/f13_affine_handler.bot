@@ -1,0 +1,14 @@
+# F-13: a handler must produce a value of the call's type; for a resource-returning call there is no value to produce
+# except the resource itself, so "this begin should fail" cannot be a handler that merely records the failure.
+# Expected: AFFINE-NOT-DEFINITELY-LIVE.
+import handle2
+
+fn go(h: handle2::Guard) -> int errors handle2::Busy:
+    g = handle2::acquire(1):
+        on handle2::Busy:
+            h
+    handle2::release(g)
+    handle2::release(h)
+    0
+
+0

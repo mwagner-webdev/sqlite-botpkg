@@ -1,0 +1,12 @@
+# F-04: a resource cannot be borrowed by a function: passing it moves it, so a resource-typed connection cannot be
+# used for two operations. Expected: USE-AFTER-MOVE at the second call.
+import handle
+
+fn body() -> int:
+    h = handle::open(1)
+    a = handle::id_of(h)
+    b = handle::id_of(h)
+    a + b
+
+with context handle::create()
+body()

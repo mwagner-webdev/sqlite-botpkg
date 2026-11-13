@@ -34,10 +34,10 @@ extern c library "m"
 
 # --- the C boundary (private: nothing below is part of the package's interface) ------------------------------
 
-opaque struct Db:
+private opaque struct Db:
     tag: unit
 
-opaque struct Stmt:
+private opaque struct Stmt:
     tag: unit
 
 private extern c fn sqlite3_initialize() -> std::ffi::c::Int
@@ -141,35 +141,35 @@ opaque struct Statement:
     slot: int
     gen: int
 
-opaque struct ConnSlot:
+private opaque struct ConnSlot:
     db: std::ffi::c::Ptr[Db]
     gen: int
 
-opaque struct StmtSlot:
+private opaque struct StmtSlot:
     stmt: std::ffi::c::Ptr[Stmt]
     gen: int
     conn: int
     names: List[str]
 
 # A native copy of one bound TEXT or BLOB value, owned by the statement it was bound to (SQLITE_STATIC).
-opaque struct Buffer:
+private opaque struct Buffer:
     stmt: int
     mem: std::ffi::c::Ptr[std::ffi::c::Void]
 
-layout PtrSlot:
+private layout PtrSlot:
     size 8
     align 8
     field p: std::ffi::c::Ptr[Db] at 0
 
-layout StmtPtrSlot:
+private layout StmtPtrSlot:
     size 8
     align 8
     field p: std::ffi::c::Ptr[Stmt] at 0
 
 # 52 random bits: a domain narrow enough for a native context slot's small-Int representation.
-type EngineIdent = Int in 0..4503599627370495
+private type EngineIdent = Int in 0..4503599627370495
 
-layout EngineId:
+private layout EngineId:
     size 8
     align 4
     field lo: std::binary::U32 at 0
@@ -197,9 +197,9 @@ private nomethod fn cstr(text: str) -> std::abi::bytes::Bytes:
     std::abi::bytes::from_list(std::str::encode_utf8(text).append(nul()))
 
 # SQLite lengths are C ints; SQLITE_MAX_LENGTH is 10^9, so anything bigger is refused up front.
-type Size = Int in 0..2147483646
+private type Size = Int in 0..2147483646
 
-error TooBig
+private error TooBig
 
 private nomethod fn size_of(b: std::abi::bytes::Bytes) -> Size errors TooBig:
     n = std::abi::bytes::length(b).value

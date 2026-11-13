@@ -1,0 +1,13 @@
+# F-01: a program that prints must install a platform I/O context, and the other platform's namespace is rejected,
+# so one source file cannot print on both Linux and macOS through std::io.
+# Expected on a Linux host: error UNSUPPORTED-PLATFORM.  With -target macos-aarch64 the same file checks ok.
+import std::io
+import std::darwin::io
+
+fn hello() errors std::io::WriteFailed:
+    std::io::print_line("hi")
+
+with context std::darwin::io::create()
+hello():
+    on std::io::WriteFailed:
+        unit
