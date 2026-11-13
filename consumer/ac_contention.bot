@@ -1,0 +1,137 @@
+# ac_contention -- two connections to one file: a writer holds the write lock; the other connection gets a structured
+# `busy` Failure (default timeout 0: immediately; or after the busy timeout), reads still work, and once the lock is
+# released it can write. Also `locked`, which is contention inside one connection.
+# Single-owner model: both connections belong to this one Engine; neither is shared across threads.
+import harness
+import posix
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::list
+import std::str
+
+fn wipe(path: str) -> unit:
+    a = posix::remove(path)
+    b = posix::remove(path.concat("-journal"))
+    unit
+
+nomethod fn count_in(db: sqlite::Connection) -> int errors sqlite::failure::Failure:
+    rows = db.query("select count(*) from t", [])
+    harness::int_cell(rows, 0, 0)
+
+nomethod fn two_connections(path: str) -> sqlite::Connection errors sqlite::failure::Failure:
+    first = sqlite::open(path)
+    first.execute("create table t(id integer primary key, v text)", [])
+    first.execute("insert into t(v) values ('seed')", [])
+    first
+
+# True when begin_immediate fails with kind busy (a successful begin is rolled back at scope end).
+nomethod fn begin_is_busy?(db: sqlite::Connection) -> bool errors sqlite::failure::Failure:
+    tx = db.begin_immediate():
+        on sqlite::failure::Failure f:
+            return f.info.kind == sqlite::failure::ErrorKind::Busy
+    false
+
+fn hold_then_fail(a: sqlite::Connection) -> unit errors sqlite::failure::Failure:
+    tx = a.begin_immediate()
+    a.execute("insert into t(v) values ('holder')", [])
+    a.execute("this is not sql", [])
+    tx.commit()
+
+fn t_busy() -> unit errors sqlite::failure::Failure:
+    path = "ac_contention.db"
+    wipe(path)
+    a = two_connections(path)
+    b = sqlite::open(path)
+    tx = a.begin_immediate()
+    a.execute("insert into t(v) values ('from a')", [])
+    harness::check("busy: a holds a write transaction", a.in_transaction?())
+    b.execute("insert into t(v) values ('from b')", []):
+        on sqlite::failure::Failure f:
+            harness::check("busy: b's write fails immediately with kind busy (timeout 0)", f.info.kind == sqlite::failure::ErrorKind::Busy)
+            harness::expect_int("busy: primary code SQLITE_BUSY", f.info.code, 5)
+            harness::check("busy: message is present for people", f.info.message.length() > 0)
+            0
+    harness::expect_int("busy: b's failed statement left nothing open", sqlite::open_statements(), 0)
+    harness::check("busy: b cannot take the write lock either", begin_is_busy?(b))
+    harness::check("busy: and the failed begin left b outside a transaction", not b.in_transaction?())
+    harness::expect_int("busy: b still reads while a writes (rollback-journal mode)", count_in(b), 1)
+    b.set_busy_timeout(50)
+    b.execute("insert into t(v) values ('from b after waiting')", []):
+        on sqlite::failure::Failure f:
+            harness::check("busy: with a 50 ms timeout it still ends as busy", f.info.kind == sqlite::failure::ErrorKind::Busy)
+            0
+    tx.commit()
+    harness::expect_int("busy: after a commits, b sees a's row", count_in(b), 2)
+    done = b.execute("insert into t(v) values ('from b')", [])
+    harness::expect_int("busy: and b can write again", done, 1)
+    harness::expect_int("busy: a sees both", count_in(a), 3)
+    a.close()
+    b.close()
+    wipe(path)
+
+fn t_rollback_releases_lock() -> unit errors sqlite::failure::Failure:
+    path = "ac_contention_rollback.db"
+    wipe(path)
+    a = two_connections(path)
+    b = sqlite::open(path)
+    tx = a.begin_immediate()
+    a.execute("insert into t(v) values ('undone')", [])
+    tx.rollback()
+    done = b.execute("insert into t(v) values ('b writes now')", [])
+    harness::expect_int("rollback: releases the write lock", done, 1)
+    harness::expect_int("rollback: the undone row never appeared", count_in(a), 2)
+    a.close()
+    b.close()
+    wipe(path)
+
+fn t_scope_exit_releases_lock() -> unit errors sqlite::failure::Failure:
+    path = "ac_contention_scope.db"
+    wipe(path)
+    a = two_connections(path)
+    b = sqlite::open(path)
+    hold_then_fail(a):
+        on sqlite::failure::Failure f:
+            unit
+    done = b.execute("insert into t(v) values ('after the failed holder')", [])
+    harness::expect_int("scope exit: a failed holder released its lock by cleanup", done, 1)
+    a.close()
+    b.close()
+    wipe(path)
+
+fn t_locked() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    db.execute("create table t(id integer primary key, v text)", [])
+    db.execute("insert into t(v) values ('one')", [])
+    scan = db.prepare("select v from t")
+    active = scan.step()
+    harness::check("locked: a statement is mid-iteration", active)
+    db.execute("drop table t", []):
+        on sqlite::failure::Failure f:
+            harness::check("locked: dropping a table that a live statement reads is kind locked", f.info.kind == sqlite::failure::ErrorKind::Locked)
+            harness::expect_int("locked: primary code SQLITE_LOCKED", f.info.code, 6)
+            0
+    scan.finalize()
+    gone = db.execute("drop table t", [])
+    harness::expect_int("locked: after finalizing, the drop succeeds", gone, 0)
+    db.close()
+
+fn run_all() -> unit:
+    t_busy():
+        on sqlite::failure::Failure f:
+            harness::unexpected("busy", sqlite::failure::describe(f.info))
+    t_rollback_releases_lock():
+        on sqlite::failure::Failure f:
+            harness::unexpected("rollback_releases_lock", sqlite::failure::describe(f.info))
+    t_scope_exit_releases_lock():
+        on sqlite::failure::Failure f:
+            harness::unexpected("scope_exit_releases_lock", sqlite::failure::describe(f.info))
+    t_locked():
+        on sqlite::failure::Failure f:
+            harness::unexpected("locked", sqlite::failure::describe(f.info))
+    harness::expect_int("no connection leaked", sqlite::open_connections(), 0)
+    harness::finish()
+
+with context harness::tally()
+with context sqlite::engine()
+run_all()

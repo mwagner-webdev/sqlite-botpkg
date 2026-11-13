@@ -1,0 +1,38 @@
+# interop_read -- reads cli.db, a database file created by sqlite.org's own `sqlite3` shell (scripts/oracle.sh), and
+# checks that the package reads every storage class exactly as the other implementation wrote it.
+import harness
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::abi::bytes
+import std::list
+import std::str
+
+fn t_read() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_read_only("cli.db")
+    rows = db.query("select id, label, x from w order by id", [])
+    harness::expect_int("cli.db: rows", rows.length(), 8)
+    harness::check("cli.db: NULL", harness::null_cell?(rows, 0, 2))
+    harness::expect_int("cli.db: int max", harness::int_cell(rows, 1, 2), 9223372036854775807)
+    harness::expect_int("cli.db: int min", harness::int_cell(rows, 2, 2), -9223372036854775808)
+    harness::check("cli.db: real", harness::real_cell(rows, 3, 2) == 0.1)
+    harness::expect_str("cli.db: unicode text", harness::text_cell(rows, 4, 2), "héllo ✓ 日本語 🎉")
+    harness::expect_str("cli.db: empty text", harness::text_cell(rows, 6, 2), "")
+    harness::expect_str("cli.db: kinds", harness::kind_name_of(rows, 5, 2).concat(" / ").concat(harness::kind_name_of(rows, 7, 2)), "BLOB / REAL")
+    pragma = db.query("pragma user_version", [])
+    harness::expect_int("cli.db: header field user_version written by the CLI", harness::int_cell(pragma, 0, 0), 77)
+    cells = db.query("select hex(x) from w where id = 6", [])
+    harness::expect_str("cli.db: blob bytes", harness::text_cell(cells, 0, 0), "00FF10AB")
+    real_max = harness::real_cell(rows, 7, 2)
+    harness::check("cli.db: largest double", real_max == 1.7976931348623157e308)
+    db.close()
+
+fn run_all() -> unit:
+    t_read():
+        on sqlite::failure::Failure f:
+            harness::unexpected("read", sqlite::failure::describe(f.info))
+    harness::finish()
+
+with context harness::tally()
+with context sqlite::engine()
+run_all()

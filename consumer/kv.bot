@@ -1,0 +1,72 @@
+# kv -- a command-line key-value store over the sqlite package: the second, independent consumer of the same API.
+#
+#   kv DB set KEY VALUE | get KEY | del KEY | keys
+import apps::kvstore
+import posix
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::abi::bytes
+import std::list
+import std::str
+
+error Usage
+
+fn arg(args: List[str], i: int) -> str errors Usage:
+    if i < 0 or i >= args.length():
+        fail Usage
+    args.at(i)
+
+fn text_of(data: std::abi::bytes::Bytes) -> str:
+    std::abi::bytes::decode_utf8(data):
+        on InvalidUtf8:
+            "(binary value)"
+
+fn execute(db: sqlite::Connection, args: List[str]) -> unit errors sqlite::failure::Failure, sqlite::value::ColumnError, apps::kvstore::NotFound, Usage:
+    command = args.arg(2)
+    if command == "set":
+        db.put(args.arg(3), std::abi::bytes::from_list(std::str::encode_utf8(args.arg(4))))
+        return posix::say("ok")
+    if command == "get":
+        return posix::say(text_of(db.get(args.arg(3))))
+    if command == "del":
+        found = db.delete(args.arg(3))
+        if found:
+            return posix::say("deleted")
+        return posix::say("not found")
+    if command == "keys":
+        loop k in db.keys():
+            posix::say(k)
+        return unit
+    fail Usage
+
+fn session(args: List[str]) -> unit errors sqlite::failure::Failure, sqlite::value::ColumnError, apps::kvstore::NotFound, Usage:
+    db = sqlite::open(args.arg(1))
+    db.init()
+    db.execute(args)
+    db.close()
+
+fn main_with(args: List[str]) -> unit:
+    session(args):
+        on sqlite::failure::Failure f:
+            posix::say("error: ".concat(sqlite::failure::describe(f.info)))
+            return posix::die(1)
+        on sqlite::value::ColumnError:
+            posix::say("error: unreadable row")
+            return posix::die(1)
+        on apps::kvstore::NotFound:
+            posix::say("error: no such key")
+            return posix::die(1)
+        on Usage:
+            posix::say("usage: kv DB set KEY VALUE | get KEY | del KEY | keys")
+            return posix::die(1)
+
+fn main_args() -> unit:
+    args = argv():
+        on InvalidArgumentEncoding:
+            posix::say("error: argument is not valid UTF-8")
+            return posix::die(1)
+    main_with(args)
+
+with context sqlite::engine()
+main_args()

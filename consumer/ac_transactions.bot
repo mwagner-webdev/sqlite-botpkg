@@ -1,0 +1,184 @@
+# ac_transactions -- commit, rollback by scope exit, constraint failure inside a transaction, savepoints, a failed commit.
+# A Transaction is a resource: if its scope ends (return, fail, end of function) before commit()/rollback(), the
+# package rolls it back. The tests below prove it with real failing operations, then read the database back.
+import harness
+import posix
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::list
+import std::str
+
+nomethod fn count_in(db: sqlite::Connection) -> int errors sqlite::failure::Failure:
+    rows = db.query("select count(*) from t", [])
+    harness::int_cell(rows, 0, 0)
+
+fn joined(items: List[str], i: int, acc: str) -> str:
+    if i < 0 or i >= items.length():
+        return acc
+    items.joined(i + 1, acc.concat(items.at(i)).concat(" | "))
+
+nomethod fn names_in(db: sqlite::Connection) -> str errors sqlite::failure::Failure:
+    rows = db.query("select name from t order by id", [])
+    all = loop r in rows:
+        r.text_at(0):
+            on sqlite::value::ColumnError:
+                "unreadable"
+    all.joined(0, "")
+
+nomethod fn fresh() -> sqlite::Connection errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    db.execute("create table t(id integer primary key, name text unique)", [])
+    db.execute("insert into t(name) values ('seed')", [])
+    db
+
+nomethod fn add_pair(db: sqlite::Connection, a: str, b: str) -> unit errors sqlite::failure::Failure:
+    tx = db.begin()
+    db.execute("insert into t(name) values (?)", [sqlite::value::text(a)])
+    db.execute("insert into t(name) values (?)", [sqlite::value::text(b)])
+    tx.commit()
+
+fn t_commit() -> unit errors sqlite::failure::Failure:
+    db = fresh()
+    add_pair(db, "alpha", "beta")
+    harness::expect_int("commit: both writes visible", count_in(db), 3)
+    harness::expect_str("commit: content", names_in(db), "seed | alpha | beta | ")
+    harness::check("commit: no transaction left open", not db.in_transaction?())
+    db.close()
+
+fn t_rollback_after_failure() -> unit errors sqlite::failure::Failure:
+    db = fresh()
+    add_pair(db, "gamma", "seed"):
+        on sqlite::failure::Failure f:
+            harness::check("rollback: the second insert violated UNIQUE", f.info.kind == sqlite::failure::ErrorKind::Constraint)
+            harness::expect_int("rollback: extended code is SQLITE_CONSTRAINT_UNIQUE", f.info.extended, 2067)
+            unit
+    harness::expect_int("rollback: the first insert was undone by scope exit", count_in(db), 1)
+    harness::expect_str("rollback: only the seed remains", names_in(db), "seed | ")
+    harness::check("rollback: no transaction left open", not db.in_transaction?())
+    harness::expect_int("rollback: no statement leaked", sqlite::open_statements(), 0)
+    add_pair(db, "gamma", "delta")
+    harness::expect_str("rollback: the connection works afterwards", names_in(db), "seed | gamma | delta | ")
+    db.close()
+
+fn explicit_rollback(db: sqlite::Connection) -> unit errors sqlite::failure::Failure:
+    tx = db.begin()
+    db.execute("insert into t(name) values ('discarded')", [])
+    harness::check("explicit rollback: inside a transaction", db.in_transaction?())
+    tx.rollback()
+
+nomethod fn early_return(db: sqlite::Connection, leave: bool) -> unit errors sqlite::failure::Failure:
+    tx = db.begin()
+    db.execute("insert into t(name) values ('left behind')", [])
+    if leave:
+        return unit
+    tx.commit()
+
+fn t_explicit_and_early_exit() -> unit errors sqlite::failure::Failure:
+    db = fresh()
+    explicit_rollback(db)
+    harness::expect_int("explicit rollback: undone", count_in(db), 1)
+    early_return(db, true)
+    harness::expect_int("early return without commit: rolled back by cleanup", count_in(db), 1)
+    harness::check("early return: not in a transaction", not db.in_transaction?())
+    early_return(db, false)
+    harness::expect_int("falling through to commit: kept", count_in(db), 2)
+    db.close()
+
+fn inner_rollback_outer_commit(db: sqlite::Connection) -> unit errors sqlite::failure::Failure:
+    outer = db.begin()
+    db.execute("insert into t(name) values ('outer')", [])
+    inner = db.begin()
+    db.execute("insert into t(name) values ('inner')", [])
+    inner.rollback()
+    outer.commit()
+
+fn inner_commit_outer_rollback(db: sqlite::Connection) -> unit errors sqlite::failure::Failure:
+    outer = db.begin()
+    db.execute("insert into t(name) values ('outer2')", [])
+    inner = db.begin()
+    db.execute("insert into t(name) values ('inner2')", [])
+    inner.commit()
+    outer.rollback()
+
+fn inner_fails(db: sqlite::Connection) -> unit errors sqlite::failure::Failure:
+    inner = db.begin()
+    db.execute("insert into t(name) values ('inner3')", [])
+    db.execute("insert into t(name) values ('seed')", [])
+    inner.commit()
+
+fn outer_survives_inner_failure(db: sqlite::Connection) -> unit errors sqlite::failure::Failure:
+    outer = db.begin()
+    db.execute("insert into t(name) values ('outer3')", [])
+    inner_fails(db):
+        on sqlite::failure::Failure f:
+            harness::check("savepoint: inner failure is a constraint", f.info.kind == sqlite::failure::ErrorKind::Constraint)
+            unit
+    harness::check("savepoint: the outer transaction is still open", db.in_transaction?())
+    outer.commit()
+
+fn t_savepoints() -> unit errors sqlite::failure::Failure:
+    db = fresh()
+    inner_rollback_outer_commit(db)
+    harness::expect_str("savepoint: inner rolled back, outer committed", names_in(db), "seed | outer | ")
+    inner_commit_outer_rollback(db)
+    harness::expect_str("savepoint: inner committed into an outer that rolled back", names_in(db), "seed | outer | ")
+    outer_survives_inner_failure(db)
+    harness::expect_str("savepoint: failed inner undone, outer work kept", names_in(db), "seed | outer | outer3 | ")
+    harness::check("savepoint: back in autocommit", not db.in_transaction?())
+    db.close()
+
+fn writer_holding_commit(db: sqlite::Connection) -> unit errors sqlite::failure::Failure:
+    tx = db.begin()
+    db.execute("insert into t(name) values ('never committed')", [])
+    tx.commit()
+
+fn t_failed_commit() -> unit errors sqlite::failure::Failure:
+    path = "ac_tx_failed_commit.db"
+    a = posix::remove(path)
+    b = posix::remove(path.concat("-journal"))
+    writer = sqlite::open(path)
+    reader = sqlite::open(path)
+    writer.execute("create table t(id integer primary key, name text unique)", [])
+    writer.execute("insert into t(name) values ('seed')", [])
+    scan = reader.prepare("select name from t")
+    holding = scan.step()
+    harness::check("failed commit: the reader holds a read lock", holding)
+    writer_holding_commit(writer):
+        on sqlite::failure::Failure f:
+            harness::check("failed commit: reported as busy", f.info.kind == sqlite::failure::ErrorKind::Busy)
+            harness::expect_str("failed commit: while committing", f.info.operation, "commit")
+            unit
+    harness::check("failed commit: the package rolled back; no transaction is left open", not writer.in_transaction?())
+    scan.finalize()
+    harness::expect_int("failed commit: the write did not become visible", count_in(reader), 1)
+    writer.execute("insert into t(name) values ('later')", [])
+    harness::expect_int("failed commit: the connection writes again", count_in(writer), 2)
+    writer.close()
+    reader.close()
+    c = posix::remove(path)
+    d = posix::remove(path.concat("-journal"))
+    unit
+
+fn run_all() -> unit:
+    t_commit():
+        on sqlite::failure::Failure f:
+            harness::unexpected("commit", sqlite::failure::describe(f.info))
+    t_rollback_after_failure():
+        on sqlite::failure::Failure f:
+            harness::unexpected("rollback_after_failure", sqlite::failure::describe(f.info))
+    t_explicit_and_early_exit():
+        on sqlite::failure::Failure f:
+            harness::unexpected("explicit_and_early_exit", sqlite::failure::describe(f.info))
+    t_savepoints():
+        on sqlite::failure::Failure f:
+            harness::unexpected("savepoints", sqlite::failure::describe(f.info))
+    t_failed_commit():
+        on sqlite::failure::Failure f:
+            harness::unexpected("failed_commit", sqlite::failure::describe(f.info))
+    harness::expect_int("no connection leaked", sqlite::open_connections(), 0)
+    harness::finish()
+
+with context harness::tally()
+with context sqlite::engine()
+run_all()

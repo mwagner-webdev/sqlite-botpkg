@@ -1,0 +1,102 @@
+# tasklist -- a persistent command-line task list over the sqlite package.
+#
+#   tasklist DB add TITLE      add a task; prints its id
+#   tasklist DB list           print every task
+#   tasklist DB pending        print the tasks not done
+#   tasklist DB done ID        mark a task done
+#   tasklist DB rm ID          delete a task
+#   tasklist DB finish         mark every pending task done, in one transaction
+#
+# Exit status 0, or 1 with a message on standard output when a command fails.
+import apps::taskdb
+import posix
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::int
+import std::list
+import std::str
+
+error BadId
+
+error Usage
+
+fn id_of(text: str) -> sqlite::value::Int64 errors BadId:
+    n = std::int::from_string(text):
+        on InvalidIntegerText:
+            0
+    if n < 1 or n > 9223372036854775807:
+        fail BadId
+    n
+
+fn line(t: apps::taskdb::Task) -> str:
+    mark = if t.done:
+        "[x] "
+    else:
+        "[ ] "
+    mark.concat(std::int::to_string(t.id)).concat("  ").concat(t.title)
+
+fn show(tasks: List[apps::taskdb::Task]) -> unit:
+    loop t in tasks:
+        posix::say(line(t))
+    unit
+
+fn arg(args: List[str], i: int) -> str errors Usage:
+    if i < 0 or i >= args.length():
+        fail Usage
+    args.at(i)
+
+fn execute(db: sqlite::Connection, args: List[str]) -> unit errors sqlite::failure::Failure, sqlite::value::ColumnError, BadId, Usage:
+    command = args.arg(2)
+    if command == "add":
+        id = db.add(args.arg(3))
+        return posix::say("added ".concat(std::int::to_string(id)))
+    if command == "list":
+        return show(db.all())
+    if command == "pending":
+        return show(db.pending())
+    if command == "done":
+        found = db.complete(id_of(args.arg(3)))
+        if not found:
+            return posix::say("no such task")
+        return posix::say("done")
+    if command == "rm":
+        found = db.remove(id_of(args.arg(3)))
+        if not found:
+            return posix::say("no such task")
+        return posix::say("removed")
+    if command == "finish":
+        n = db.complete_all()
+        return posix::say("finished ".concat(std::int::to_string(n)))
+    fail Usage
+
+fn session(args: List[str]) -> unit errors sqlite::failure::Failure, sqlite::value::ColumnError, BadId, Usage:
+    db = sqlite::open(args.arg(1))
+    db.init()
+    db.execute(args)
+    db.close()
+
+fn main_with(args: List[str]) -> unit:
+    session(args):
+        on sqlite::failure::Failure f:
+            posix::say("error: ".concat(sqlite::failure::describe(f.info)))
+            return posix::die(1)
+        on sqlite::value::ColumnError:
+            posix::say("error: unreadable row")
+            return posix::die(1)
+        on BadId:
+            posix::say("error: the task id is not an integer")
+            return posix::die(1)
+        on Usage:
+            posix::say("usage: tasklist DB add TITLE | list | pending | done ID | rm ID | finish")
+            return posix::die(1)
+
+fn main_args() -> unit:
+    args = argv():
+        on InvalidArgumentEncoding:
+            posix::say("error: argument is not valid UTF-8")
+            return posix::die(1)
+    main_with(args)
+
+with context sqlite::engine()
+main_args()

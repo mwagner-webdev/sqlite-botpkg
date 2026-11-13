@@ -1,0 +1,156 @@
+# ac_resources -- statements and connections as resources: early exit from iteration, reset and reuse, closing a
+# connection with live statements, values that outlive the statement that produced them, no growth over many runs.
+import harness
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::abi::bytes
+import std::int
+import std::list
+import std::str
+
+nomethod fn filled() -> sqlite::Connection errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    db.execute("create table n(i integer primary key, label text)", [])
+    ins = db.prepare("insert into n(i, label) values (?, ?)")
+    loop i from 1 to 51:
+        ins.run([sqlite::value::integer(i), sqlite::value::text("label number ".concat(std::int::to_string(i)))])
+    ins.finalize()
+    db
+
+fn take_three(s: sqlite::Statement) -> int errors sqlite::failure::Failure:
+    a = s.step()
+    b = s.step()
+    c = s.step()
+    if a and b and c:
+        return 3
+    0
+
+fn t_early_exit() -> unit errors sqlite::failure::Failure:
+    db = filled()
+    scan = db.prepare("select i from n order by i")
+    harness::expect_int("early exit: three rows read", take_three(scan), 3)
+    row = scan.row()
+    harness::expect_int("early exit: current row is the third", harness::int_cell([row], 0, 0), 3)
+    scan.reset()
+    harness::expect_int("early exit: after reset the statement starts over", take_three(scan), 3)
+    first = scan.row()
+    harness::expect_int("early exit: ... at the third row again", harness::int_cell([first], 0, 0), 3)
+    all = scan.rows([])
+    harness::expect_int("early exit: a full run after an abandoned one returns every row", all.length(), 50)
+    scan.finalize()
+    harness::expect_int("early exit: finalized", sqlite::open_statements(), 0)
+    abandoned = db.prepare("select i from n")
+    harness::expect_int("early exit: abandoned mid-iteration", take_three(abandoned), 3)
+    db.execute("update n set label = 'changed' where i = 1", [])
+    rows = db.query("select label from n where i = 1", [])
+    harness::expect_str("early exit: other statements still run (write while a read is open)", harness::text_cell(rows, 0, 0), "changed")
+    abandoned.finalize()
+    db.close()
+
+fn t_close_with_live_statements() -> unit errors sqlite::failure::Failure:
+    db = filled()
+    a = db.prepare("select i from n")
+    b = db.prepare("select label from n")
+    c = db.prepare("insert into n(i, label) values (?, ?)")
+    live = a.step()
+    harness::check("close live: statement mid-iteration", live)
+    harness::expect_int("close live: three statements open", sqlite::open_statements(), 3)
+    db.close()
+    harness::expect_int("close live: close finalized all of them", sqlite::open_statements(), 0)
+    harness::expect_int("close live: and the connection", sqlite::open_connections(), 0)
+    ok = true
+    a.step():
+        on sqlite::failure::Failure f:
+            harness::check("close live: a's handle is stale, not dangling", f.info.kind == sqlite::failure::ErrorKind::Misuse)
+            false
+    c.run([sqlite::value::integer(1), sqlite::value::text("xx")]):
+        on sqlite::failure::Failure f:
+            harness::check("close live: c's handle is stale too", f.info.kind == sqlite::failure::ErrorKind::Misuse)
+            0
+    other = sqlite::open_memory()
+    reuse = other.prepare("select 1")
+    harness::check("close live: the freed slots are reused safely", reuse.step())
+    a.step():
+        on sqlite::failure::Failure f:
+            harness::check("close live: an old handle still does not alias the new statement", f.info.kind == sqlite::failure::ErrorKind::Misuse)
+            false
+    reuse.finalize()
+    other.close()
+
+fn t_values_outlive_statements() -> unit errors sqlite::failure::Failure:
+    db = filled()
+    rows = db.query("select i, label from n where i in (7, 8) order by i", [])
+    scan = db.prepare("select label from n where i = 9")
+    got = scan.step()
+    kept = scan.row()
+    scan.finalize()
+    db.execute("delete from n", [])
+    db.close()
+    harness::expect_str("outlive: text survived finalize, delete and close", harness::text_cell(rows, 0, 1), "label number 7")
+    harness::expect_str("outlive: second row", harness::text_cell(rows, 1, 1), "label number 8")
+    harness::expect_str("outlive: a single row survived finalize", harness::text_cell([kept], 0, 0), "label number 9")
+
+fn t_bound_values_owned_by_statement() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    db.execute("create table b(id integer primary key, t text, x blob)", [])
+    ins = db.prepare("insert into b(t, x) values (?, ?)")
+    ins.bind(1, sqlite::value::text("first text"))
+    ins.bind(1, sqlite::value::text("rebound text"))
+    ins.bind(2, sqlite::value::blob(std::abi::bytes::from_list([])))
+    done = ins.step()
+    harness::check("bind: an INSERT step completes without a row", not done)
+    ins.reset()
+    ins.bind_all([sqlite::value::text("bound again"), sqlite::value::null()])
+    again = ins.step()
+    ins.reset()
+    changed = ins.run([sqlite::value::text("through run"), sqlite::value::blob(std::abi::bytes::from_list([]))])
+    harness::expect_int("bind: run reports the insert", changed, 1)
+    ins.finalize()
+    rows = db.query("select t, typeof(x) from b order by id", [])
+    harness::expect_int("bind: three rows", rows.length(), 3)
+    harness::expect_str("bind: the rebound text won, the first was never stored", harness::text_cell(rows, 0, 0), "rebound text")
+    harness::expect_str("bind: empty blob bound as BLOB", harness::text_cell(rows, 0, 1), "blob")
+    harness::expect_str("bind: after reset, a fresh binding", harness::text_cell(rows, 1, 0), "bound again")
+    harness::expect_str("bind: NULL bound as NULL", harness::text_cell(rows, 1, 1), "null")
+    harness::expect_str("bind: run's text", harness::text_cell(rows, 2, 0), "through run")
+    db.close()
+
+fn t_no_growth() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    db.execute("create table g(i integer, t text, b blob)", [])
+    ins = db.prepare("insert into g(i, t, b) values (?, ?, ?)")
+    loop i from 0 to 2000:
+        ins.run([sqlite::value::integer(i), sqlite::value::text("some text that must be copied and freed"), sqlite::value::blob(std::abi::bytes::from_list([]))])
+    harness::expect_int("growth: one statement served 2000 runs", sqlite::open_statements(), 1)
+    loop i from 0 to 500:
+        rows = db.query("select count(*) from g where i = ?", [sqlite::value::integer(i)])
+    harness::expect_int("growth: 500 one-shot queries left no statement behind", sqlite::open_statements(), 1)
+    ins.finalize()
+    counted = db.query("select count(*) from g", [])
+    harness::expect_int("growth: all inserts landed", harness::int_cell(counted, 0, 0), 2000)
+    db.close()
+
+fn run_all() -> unit:
+    t_early_exit():
+        on sqlite::failure::Failure f:
+            harness::unexpected("early_exit", sqlite::failure::describe(f.info))
+    t_close_with_live_statements():
+        on sqlite::failure::Failure f:
+            harness::unexpected("close_with_live_statements", sqlite::failure::describe(f.info))
+    t_values_outlive_statements():
+        on sqlite::failure::Failure f:
+            harness::unexpected("values_outlive_statements", sqlite::failure::describe(f.info))
+    t_bound_values_owned_by_statement():
+        on sqlite::failure::Failure f:
+            harness::unexpected("bound_values", sqlite::failure::describe(f.info))
+    t_no_growth():
+        on sqlite::failure::Failure f:
+            harness::unexpected("no_growth", sqlite::failure::describe(f.info))
+    harness::expect_int("no connection leaked", sqlite::open_connections(), 0)
+    harness::expect_int("no statement leaked", sqlite::open_statements(), 0)
+    harness::finish()
+
+with context harness::tally()
+with context sqlite::engine()
+run_all()

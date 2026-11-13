@@ -1,0 +1,74 @@
+# interop_write -- writes interop.db with the Botlish package; scripts/oracle.sh then inspects the same file with
+# sqlite.org's own `sqlite3` shell (an independent build) and compares what SQLite itself says is stored.
+import harness
+import posix
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::abi::bytes
+import std::byte
+import std::list
+import std::str
+
+fn byte_of(n: int) -> std::byte::Byte:
+    if n < 0 or n > 255:
+        return 0
+    n
+
+fn ramp() -> std::abi::bytes::Bytes:
+    all = loop i from 0 to 256:
+        byte_of(i)
+    std::abi::bytes::from_list(all)
+
+fn text_with_nul() -> str:
+    data = std::abi::bytes::from_list([byte_of(97), byte_of(0), byte_of(98)])
+    std::abi::bytes::decode_utf8(data):
+        on InvalidUtf8:
+            "bad"
+
+nomethod fn row(db: sqlite::Connection, id: sqlite::value::Int64, label: str, x: sqlite::value::Value) -> unit errors sqlite::failure::Failure:
+    db.execute("insert into v(id, label, x) values (?, ?, ?)", [sqlite::value::integer(id), sqlite::value::text(label), x])
+    unit
+
+fn abandoned(db: sqlite::Connection) -> unit errors sqlite::failure::Failure:
+    tx = db.begin()
+    db.execute("insert into tx(n) values (99)", [])
+    db.execute("insert into no_such_table values (1)", [])
+    tx.commit()
+
+fn write() -> unit errors sqlite::failure::Failure:
+    a = posix::remove("interop.db")
+    b = posix::remove("interop.db-journal")
+    db = sqlite::open("interop.db")
+    db.execute_script("create table v(id integer primary key, label text, x); create table tx(n integer); pragma user_version = 54;")
+    row(db, 1, "null", sqlite::value::null())
+    row(db, 2, "int-max", sqlite::value::integer(9223372036854775807))
+    row(db, 3, "int-min", sqlite::value::integer(-9223372036854775808))
+    row(db, 4, "zero", sqlite::value::integer(0))
+    row(db, 5, "real", sqlite::value::real(0.1))
+    row(db, 6, "real-max", sqlite::value::real(1.7976931348623157e308))
+    row(db, 7, "real-denormal", sqlite::value::real(5.0e-324))
+    row(db, 8, "text-unicode", sqlite::value::text("héllo ✓ 日本語 🎉"))
+    row(db, 9, "text-nul", sqlite::value::text(text_with_nul()))
+    row(db, 10, "text-empty", sqlite::value::text(""))
+    row(db, 11, "blob-ramp", sqlite::value::blob(ramp()))
+    row(db, 12, "blob-empty", sqlite::value::blob(std::abi::bytes::from_list([])))
+    row(db, 13, "real-negative", sqlite::value::real(-2.5))
+    tx = db.begin()
+    db.execute("insert into tx(n) values (1)", [])
+    db.execute("insert into tx(n) values (2)", [])
+    tx.commit()
+    abandoned(db):
+        on sqlite::failure::Failure f:
+            unit
+    db.close()
+
+fn main_run() -> unit:
+    write():
+        on sqlite::failure::Failure f:
+            posix::say("FAILED ".concat(sqlite::failure::describe(f.info)))
+            return posix::die(1)
+    posix::say("interop.db written")
+
+with context sqlite::engine()
+main_run()

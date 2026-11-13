@@ -1,0 +1,14 @@
+# info -- which SQLite the installed package is running.
+import posix
+import sqlite
+import std::int
+import std::str
+
+fn report() -> unit:
+    posix::say("sqlite version:    ".concat(sqlite::version()))
+    posix::say("sqlite number:     ".concat(std::int::to_string(sqlite::version_number())))
+    posix::say("sqlite source id:  ".concat(sqlite::source_id()))
+    posix::say("threading mode:    ".concat(std::int::to_string(sqlite::thread_mode())).concat(" (1 = serialized)"))
+
+with context sqlite::engine()
+report()

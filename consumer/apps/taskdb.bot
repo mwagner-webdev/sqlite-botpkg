@@ -1,0 +1,55 @@
+# apps::taskdb -- the storage layer of a task-list application: ordinary functions over a sqlite::Connection.
+#
+# It knows nothing about who calls it (a command-line program, a test, a server): the caller opens the connection and
+# installs the sqlite Engine context at startup, and these functions simply take the connection they are given.
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::list
+
+struct Task:
+    id: int
+    title: str
+    done: bool
+
+fn init(db: sqlite::Connection) -> unit errors sqlite::failure::Failure:
+    db.execute("create table if not exists tasks(id integer primary key, title text not null, done integer not null default 0 check (done in (0, 1)))", [])
+    unit
+
+# Adds a task and returns its id.
+fn add(db: sqlite::Connection, title: str) -> int errors sqlite::failure::Failure:
+    db.execute("insert into tasks(title) values (?)", [sqlite::value::text(title)])
+    db.last_insert_rowid()
+
+# Marks a task done; false when there is no such task.
+fn complete(db: sqlite::Connection, id: sqlite::value::Int64) -> bool errors sqlite::failure::Failure:
+    changed = db.execute("update tasks set done = 1 where id = ?", [sqlite::value::integer(id)])
+    changed == 1
+
+fn remove(db: sqlite::Connection, id: sqlite::value::Int64) -> bool errors sqlite::failure::Failure:
+    changed = db.execute("delete from tasks where id = ?", [sqlite::value::integer(id)])
+    changed == 1
+
+fn of_row(r: sqlite::value::Row) -> Task errors sqlite::value::ColumnError:
+    done = r.integer_at(2)
+    Task {id: r.integer_at(0), title: r.text_at(1), done: done == 1}
+
+fn decode(rows: List[sqlite::value::Row]) -> List[Task] errors sqlite::value::ColumnError:
+    loop r in rows:
+        of_row(r)
+
+# Every task, oldest first.
+fn all(db: sqlite::Connection) -> List[Task] errors sqlite::failure::Failure, sqlite::value::ColumnError:
+    rows = db.query("select id, title, done from tasks order by id", [])
+    decode(rows)
+
+fn pending(db: sqlite::Connection) -> List[Task] errors sqlite::failure::Failure, sqlite::value::ColumnError:
+    rows = db.query("select id, title, done from tasks where done = 0 order by id", [])
+    decode(rows)
+
+# Completes every pending task in one transaction: all or none.
+fn complete_all(db: sqlite::Connection) -> int errors sqlite::failure::Failure:
+    tx = db.begin()
+    changed = db.execute("update tasks set done = 1 where done = 0", [])
+    tx.commit()
+    changed

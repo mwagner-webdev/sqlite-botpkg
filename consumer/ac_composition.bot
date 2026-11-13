@@ -1,0 +1,88 @@
+# ac_composition -- two independent consumers of one package API (apps::taskdb and apps::kvstore, which share no code)
+# used side by side, over one connection and over separate ones, with one Engine installed once at startup.
+# Neither consumer mentions the Engine: the compiler derives that they require it.
+import apps::kvstore
+import apps::taskdb
+import harness
+import posix
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::abi::bytes
+import std::list
+import std::str
+
+fn bytes_of(text: str) -> std::abi::bytes::Bytes:
+    std::abi::bytes::from_list(std::str::encode_utf8(text))
+
+fn t_shared_connection() -> unit errors sqlite::failure::Failure, sqlite::value::ColumnError:
+    db = sqlite::open_memory()
+    apps::taskdb::init(db)
+    apps::kvstore::init(db)
+    first = db.add("compose")
+    db.put("owner", bytes_of("ada"))
+    second = db.add("verify")
+    db.put("owner", bytes_of("grace"))
+    harness::expect_int("shared: task ids are independent of the kv table", second, first + 1)
+    tasks = db.all()
+    harness::expect_int("shared: two tasks", tasks.length(), 2)
+    owner = db.get("owner"):
+        on apps::kvstore::NotFound:
+            bytes_of("lost")
+    harness::check("shared: kv upsert kept the last value", owner == bytes_of("grace"))
+    keys = db.keys()
+    harness::expect_int("shared: one key", keys.length(), 1)
+    done = db.complete_all()
+    harness::expect_int("shared: complete_all ran in one transaction", done, 2)
+    pending = db.pending()
+    harness::expect_int("shared: nothing pending", pending.length(), 0)
+    missing = db.get("nobody"):
+        on apps::kvstore::NotFound:
+            bytes_of("not found")
+    harness::check("shared: a missing key is the NotFound error, not an empty value", missing == bytes_of("not found"))
+    db.close()
+
+fn t_separate_connections() -> unit errors sqlite::failure::Failure, sqlite::value::ColumnError:
+    tasks_path = "ac_compose_tasks.db"
+    kv_path = "ac_compose_kv.db"
+    a = posix::remove(tasks_path)
+    b = posix::remove(kv_path)
+    c = posix::remove(tasks_path.concat("-journal"))
+    d = posix::remove(kv_path.concat("-journal"))
+    tdb = sqlite::open(tasks_path)
+    kdb = sqlite::open(kv_path)
+    apps::taskdb::init(tdb)
+    apps::kvstore::init(kdb)
+    tdb.add("only in the task database")
+    kdb.put("key", bytes_of("value"))
+    harness::expect_int("separate: two connections open at once", sqlite::open_connections(), 2)
+    harness::expect_int("separate: the task database holds no kv table", tdb.query("select count(*) from sqlite_master where name = 'kv'", []).length(), 1)
+    counts = tdb.query("select count(*) from sqlite_master where name = 'kv'", [])
+    harness::expect_int("separate: ... and it is empty of one", harness::int_cell(counts, 0, 0), 0)
+    tdb.close()
+    kdb.close()
+    reopened = sqlite::open(tasks_path)
+    tasks = reopened.all()
+    harness::expect_int("separate: tasks persisted", tasks.length(), 1)
+    reopened.close()
+    e = posix::remove(tasks_path)
+    f = posix::remove(kv_path)
+    unit
+
+fn run_all() -> unit:
+    t_shared_connection():
+        on sqlite::failure::Failure f:
+            harness::unexpected("shared_connection", sqlite::failure::describe(f.info))
+        on sqlite::value::ColumnError:
+            harness::unexpected("shared_connection", "column error")
+    t_separate_connections():
+        on sqlite::failure::Failure f:
+            harness::unexpected("separate_connections", sqlite::failure::describe(f.info))
+        on sqlite::value::ColumnError:
+            harness::unexpected("separate_connections", "column error")
+    harness::expect_int("no connection leaked", sqlite::open_connections(), 0)
+    harness::finish()
+
+with context harness::tally()
+with context sqlite::engine()
+run_all()

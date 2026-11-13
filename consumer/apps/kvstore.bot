@@ -1,0 +1,30 @@
+# apps::kvstore -- a key-value store over a sqlite::Connection, independent of apps::taskdb.
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::abi::bytes
+import std::list
+
+error NotFound
+
+fn init(db: sqlite::Connection) -> unit errors sqlite::failure::Failure:
+    db.execute("create table if not exists kv(k text primary key, v blob not null) without rowid", [])
+    unit
+
+fn put(db: sqlite::Connection, key: str, value: std::abi::bytes::Bytes) -> unit errors sqlite::failure::Failure:
+    db.execute("insert into kv(k, v) values (?, ?) on conflict(k) do update set v = excluded.v", [sqlite::value::text(key), sqlite::value::blob(value)])
+    unit
+
+fn get(db: sqlite::Connection, key: str) -> std::abi::bytes::Bytes errors sqlite::failure::Failure, sqlite::value::ColumnError, NotFound:
+    rows = db.query("select v from kv where k = ?", [sqlite::value::text(key)])
+    if rows.length() == 0:
+        fail NotFound
+    rows.at(0).blob_at(0)
+
+fn delete(db: sqlite::Connection, key: str) -> bool errors sqlite::failure::Failure:
+    db.execute("delete from kv where k = ?", [sqlite::value::text(key)]) == 1
+
+fn keys(db: sqlite::Connection) -> List[str] errors sqlite::failure::Failure, sqlite::value::ColumnError:
+    rows = db.query("select k from kv order by k", [])
+    loop r in rows:
+        r.text_at(0)

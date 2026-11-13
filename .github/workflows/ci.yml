@@ -2,9 +2,12 @@ name: ci
 
 # sqlite-botpkg milestone 1.
 #
-#   compiler-macos   builds the Botlish compiler for macOS arm64 from the pinned upstream commit (Botlish.app)
-#   native-linux     builds the pinned SQLite amalgamation into libbotsqlite3.a on Linux x86-64
-#   native-macos     the same on macOS arm64 (Apple clang)
+#   compiler-macos     builds the Botlish compiler for macOS arm64 from the pinned upstream commit (Botlish.app)
+#   native-linux       builds the pinned SQLite amalgamation into libbotsqlite3.a on Linux x86-64
+#   native-macos       the same on macOS arm64 (Apple clang)
+#   package            packs sqlite-0.1.0.botpkg from sources + both archives (deterministic: packed twice, compared)
+#   linux-acceptance   a fresh consumer project installs the artifact and runs the whole portable suite (Linux x86-64)
+#   macos-acceptance   the same artifact, the same suite, on a real macOS arm64 runner, AOT only (no JIT)
 #
 # The pinned compiler is upstream commit cdb751b (the single-file Linux build with the same SHA-256 is
 # the published `single-latest` asset of 2026-11-12).
@@ -18,6 +21,10 @@ env:
   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 defaults:
   run:
@@ -113,3 +120,115 @@ jobs:
         with:
           name: native-macos-aarch64
           path: build/native/macos-aarch64/libbotsqlite3.a
+
+  package:
+    name: package sqlite-0.1.0.botpkg (Linux x86-64 + macOS arm64)
+    needs: [native-linux, native-macos]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Obtain the pinned Linux compiler
+        run: |
+          curl -fsSL "$BOTLISH_LINUX_URL" -o botlish
+          echo "$BOTLISH_LINUX_SHA256  botlish" | sha256sum -c -
+          chmod +x botlish
+          ./botlish -version
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: archives
+      - name: Pack
+        run: |
+          BOT=$PWD/botlish scripts/pack.sh \
+            --linux-x86_64 archives/native-linux-x86_64/libbotsqlite3.a \
+            --macos-aarch64 archives/native-macos-aarch64/libbotsqlite3.a --out dist
+      - name: Inspect
+        run: |
+          ./botlish package inspect dist/sqlite-0.1.0.botpkg
+          sha256sum dist/sqlite-0.1.0.botpkg | tee dist/sqlite-0.1.0.botpkg.sha256
+          echo "the Linux archive built in this run is bit-identical to a local build: $(sha256sum archives/native-linux-x86_64/libbotsqlite3.a)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sqlite-botpkg
+          path: |
+            dist/sqlite-0.1.0.botpkg
+            dist/sqlite-0.1.0.botpkg.sha256
+
+  linux-acceptance:
+    name: acceptance suite (Linux x86-64)
+    needs: package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Obtain the pinned Linux compiler
+        run: |
+          curl -fsSL "$BOTLISH_LINUX_URL" -o botlish
+          echo "$BOTLISH_LINUX_SHA256  botlish" | sha256sum -c -
+          chmod +x botlish
+          ./botlish -version
+      - uses: actions/download-artifact@v4
+        with:
+          name: sqlite-botpkg
+          path: dist
+      - name: Host
+        run: |
+          uname -srm; cat /etc/os-release | head -2; gcc --version | head -1
+          dpkg -l | grep -i libsqlite3 || echo "(no system SQLite packages: none is used)"
+      - name: The independent oracle (sqlite.org's own sqlite3 shell, SHA3-256 verified)
+        run: scripts/fetch_oracle.sh build/oracle
+      - name: Acceptance suite
+        run: BOT=$PWD/botlish scripts/run_acceptance.sh dist/sqlite-0.1.0.botpkg 2>&1 | tee acceptance-linux.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acceptance-linux-x86_64
+          path: |
+            acceptance-linux.log
+            build/consumer-run/*.log
+
+  macos-acceptance:
+    name: acceptance suite (macOS arm64, native AOT)
+    needs: [package, compiler-macos]
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Host (the claim is only as good as this record)
+        run: |
+          sw_vers; uname -a
+          echo "arch: $(uname -m); translated: $(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0)"
+          echo "CPUs: $(sysctl -n hw.ncpu), memory: $(sysctl -n hw.memsize), Xcode: $(xcode-select -p), SDK $(xcrun --show-sdk-version)"
+          cc --version | head -2
+          [[ $(uname -s) == Darwin && $(uname -m) == arm64 ]] || { echo "::error::not a native arm64 macOS runner"; exit 1; }
+          [[ $(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0) != 1 ]] || { echo "::error::running under Rosetta"; exit 1; }
+      - uses: actions/download-artifact@v4
+        with:
+          name: botlish-macos-aarch64
+          path: compiler
+      - uses: actions/download-artifact@v4
+        with:
+          name: sqlite-botpkg
+          path: dist
+      - name: Unpack the macOS compiler
+        run: |
+          (cd compiler && shasum -a 256 -c botlish-macos-aarch64.zip.sha256 && unzip -q botlish-macos-aarch64.zip)
+          echo "BOT=$PWD/compiler/Botlish.app/Contents/MacOS/botlish" >> "$GITHUB_ENV"
+          compiler/Botlish.app/Contents/MacOS/botlish -version
+      - name: The independent oracle (sqlite.org's own sqlite3 shell for macOS arm64, SHA3-256 verified)
+        run: scripts/fetch_oracle.sh build/oracle
+      - name: Acceptance suite
+        run: scripts/run_acceptance.sh dist/sqlite-0.1.0.botpkg 2>&1 | tee acceptance-macos.log
+      - name: What the executables are
+        if: always()
+        run: |
+          cd build/consumer-run
+          file ac_basic; lipo -archs ac_basic; otool -L ac_basic
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acceptance-macos-aarch64
+          path: |
+            acceptance-macos.log
+            build/consumer-run/*.log
+
