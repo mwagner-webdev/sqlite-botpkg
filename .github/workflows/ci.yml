@@ -2,12 +2,12 @@ name: ci
 
 # sqlite-botpkg milestone 1.
 #
-#   compiler-macos     builds the Botlish compiler for macOS arm64 from the pinned upstream commit (Botlish.app)
 #   native-linux       builds the pinned SQLite amalgamation into libbotsqlite3.a on Linux x86-64
 #   native-macos       the same on macOS arm64 (Apple clang)
 #   package            packs sqlite-0.1.0.botpkg from sources + both archives (deterministic: packed twice, compared)
 #   linux-acceptance   a fresh consumer project installs the artifact and runs the whole portable suite (Linux x86-64)
-#   macos-acceptance   the same artifact, the same suite, on a real macOS arm64 runner, AOT only (no JIT)
+#   macos-acceptance   ONE macOS arm64 job: builds the Botlish compiler for macOS from the pinned upstream commit (Botlish.app, no JIT),
+#                      waits for this run's `package` artifact, then runs the same suite on it, native AOT only
 #
 # The pinned compiler is upstream commit cdb751b (the single-file Linux build with the same SHA-256 is
 # the published `single-latest` asset of 2026-11-12).
@@ -26,73 +26,15 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  actions: read
+
 defaults:
   run:
     shell: bash
 
 jobs:
-  compiler-macos:
-    name: Botlish compiler for macOS arm64 (built from the pinned source)
-    runs-on: macos-15
-    timeout-minutes: 150
-    steps:
-      - name: Host
-        run: |
-          sw_vers; uname -a
-          echo "CPUs: $(sysctl -n hw.ncpu), memory: $(sysctl -n hw.memsize), Xcode: $(xcode-select -p), SDK $(xcrun --show-sdk-version)"
-          [[ $(uname -s) == Darwin && $(uname -m) == arm64 ]] || { echo "::error::not a native arm64 macOS runner"; exit 1; }
-          [[ $(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0) != 1 ]] || { echo "::error::running under Rosetta"; exit 1; }
-      - uses: actions/checkout@v4
-        with:
-          repository: mwagner-webdev/botlish
-          ref: ${{ env.BOTLISH_REV }}
-          path: botlish-src
-      - name: Cache the Tcl 9.0.1 build
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/botlish/tcl-9.0.1
-          key: tcl-9.0.1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('botlish-src/tests/platform/setup-macos.sh') }}
-      - name: Install Tcl 9.0.1 and stable Rust
-        working-directory: botlish-src
-        run: tests/platform/setup-macos.sh "$GITHUB_PATH"
-      - name: Cache the native backend build
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            botlish-src/native/target
-          key: native-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('botlish-src/native/Cargo.lock') }}
-          restore-keys: native-cargo-${{ runner.os }}-${{ runner.arch }}-
-      - name: Build the native backend (test-suite flavour, needed by build.sh's runtime-archive check)
-        working-directory: botlish-src
-        run: cargo build --release --manifest-path native/Cargo.toml
-      - name: Cache the Tcl.framework build
-        uses: actions/cache@v4
-        with:
-          path: ~/Library/Caches/botlish-app
-          key: app-tcl-framework-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('botlish-src/single/macos/tcl-framework.sh', 'botlish-src/single/build.sh') }}
-      - name: Build Botlish.app
-        working-directory: botlish-src
-        run: single/macos/build.sh -o "$GITHUB_WORKSPACE/botlish-macos" 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
-      - name: Version
-        run: |
-          botlish-macos/Botlish.app/Contents/MacOS/botlish -version
-          cat botlish-macos/botlish-macos-aarch64.zip.sha256
-      - uses: actions/upload-artifact@v4
-        with:
-          name: botlish-macos-aarch64
-          path: |
-            botlish-macos/botlish-macos-aarch64.zip
-            botlish-macos/botlish-macos-aarch64.zip.sha256
-          if-no-files-found: error
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: compiler-macos-logs
-          path: build.log
-          if-no-files-found: warn
-
   native-linux:
     name: native SQLite archive (Linux x86-64)
     runs-on: ubuntu-24.04
@@ -206,9 +148,8 @@ jobs:
 
   macos-acceptance:
     name: acceptance suite (macOS arm64, native AOT)
-    needs: [package, compiler-macos]
     runs-on: macos-15
-    timeout-minutes: 90
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
       - name: Host (the claim is only as good as this record)
@@ -219,19 +160,62 @@ jobs:
           cc --version | head -2
           [[ $(uname -s) == Darwin && $(uname -m) == arm64 ]] || { echo "::error::not a native arm64 macOS runner"; exit 1; }
           [[ $(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0) != 1 ]] || { echo "::error::running under Rosetta"; exit 1; }
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          name: botlish-macos-aarch64
-          path: compiler
-      - uses: actions/download-artifact@v4
+          repository: mwagner-webdev/botlish
+          ref: ${{ env.BOTLISH_REV }}
+          path: botlish-src
+      - name: Cache the Tcl 9.0.1 build
+        uses: actions/cache@v4
         with:
-          name: sqlite-botpkg
-          path: dist
-      - name: Unpack the macOS compiler
+          path: ~/.cache/botlish/tcl-9.0.1
+          key: tcl-9.0.1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('botlish-src/tests/platform/setup-macos.sh') }}
+      - name: Install Tcl 9.0.1 and stable Rust
+        working-directory: botlish-src
+        run: tests/platform/setup-macos.sh "$GITHUB_PATH"
+      - name: Cache the native backend build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            botlish-src/native/target
+          key: native-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('botlish-src/native/Cargo.lock') }}
+          restore-keys: native-cargo-${{ runner.os }}-${{ runner.arch }}-
+      - name: Build the native backend (test-suite flavour, needed by build.sh's runtime-archive check)
+        working-directory: botlish-src
+        run: cargo build --release --manifest-path native/Cargo.toml
+      - name: Cache the Tcl.framework build
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/botlish-app
+          key: app-tcl-framework-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('botlish-src/single/macos/tcl-framework.sh', 'botlish-src/single/build.sh') }}
+      - name: Build Botlish.app
+        working-directory: botlish-src
+        run: single/macos/build.sh -o "$GITHUB_WORKSPACE/botlish-macos" 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+      - name: Version
         run: |
-          (cd compiler && shasum -a 256 -c botlish-macos-aarch64.zip.sha256 && unzip -q botlish-macos-aarch64.zip)
-          echo "BOT=$PWD/compiler/Botlish.app/Contents/MacOS/botlish" >> "$GITHUB_ENV"
-          compiler/Botlish.app/Contents/MacOS/botlish -version
+          botlish-macos/Botlish.app/Contents/MacOS/botlish -version
+          cat botlish-macos/botlish-macos-aarch64.zip.sha256
+      - name: Version of the compiler built here
+        run: |
+          botlish-macos/Botlish.app/Contents/MacOS/botlish -version
+          cat botlish-macos/botlish-macos-aarch64.zip.sha256
+          echo "BOT=$GITHUB_WORKSPACE/botlish-macos/Botlish.app/Contents/MacOS/botlish" >> "$GITHUB_ENV"
+      - name: Wait for this run's package artifact (built on Linux from both native archives)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 480); do
+            st=$(gh run view "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --json jobs --jq '.jobs[] | select(.name | startswith("package")) | .conclusion')
+            echo "package job conclusion: '$st'"
+            if [ "$st" = success ]; then break; fi
+            if [ "$st" = failure ] || [ "$st" = cancelled ] || [ "$st" = skipped ]; then echo "::error::the package job did not succeed"; exit 1; fi
+            sleep 30
+          done
+          [ "$st" = success ] || { echo "::error::timed out waiting for the package job"; exit 1; }
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" -n sqlite-botpkg -D dist
+          ls -la dist
       - name: The independent oracle (sqlite.org's own sqlite3 shell for macOS arm64, SHA3-256 verified)
         run: scripts/fetch_oracle.sh build/oracle
       - name: Acceptance suite
@@ -256,3 +240,11 @@ jobs:
             bench-botlish-macos.log
             build/consumer-run/*.log
 
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: botlish-macos-aarch64
+          path: |
+            botlish-macos/botlish-macos-aarch64.zip
+            botlish-macos/botlish-macos-aarch64.zip.sha256
+            build.log

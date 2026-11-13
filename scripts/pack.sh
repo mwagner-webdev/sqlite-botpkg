@@ -20,6 +20,10 @@ while [ $# -gt 0 ]; do
     *) echo "unknown argument $1" >&2; exit 2;;
   esac
 done
+abs() { (cd "$(dirname "$1")" && printf '%s/%s' "$(pwd)" "$(basename "$1")"); }
+[ -z "$LINUX" ] || LINUX=$(abs "$LINUX")
+[ -z "$MACOS" ] || MACOS=$(abs "$MACOS")
+mkdir -p "$OUT" && OUT=$(cd "$OUT" && pwd)
 BUILD=$ROOT/build
 rm -rf "$BUILD/stage" && mkdir -p "$BUILD/stage" "$OUT"
 if [ -z "$LINUX" ]; then
@@ -47,4 +51,4 @@ rm -rf "$BUILD/pack-a" "$BUILD/pack-b" && mkdir -p "$BUILD/pack-a" "$BUILD/pack-
 "$BOT" package pack "$STAGE" -out "$BUILD/pack-b" >/dev/null
 cmp "$BUILD"/pack-a/*.botpkg "$BUILD"/pack-b/*.botpkg
 cp "$BUILD"/pack-a/*.botpkg "$OUT/"
-sha256sum "$OUT"/*.botpkg
+if command -v sha256sum >/dev/null; then sha256sum "$OUT"/*.botpkg; else shasum -a 256 "$OUT"/*.botpkg; fi

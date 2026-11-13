@@ -1,0 +1,59 @@
+== platform: Linux 6.6.87.2-microsoft-standard-WSL2 x86_64
+== compiler: Botlish compiler (no release version; this is a development build)
+== compiler: source revision: cdb751b, packaged
+== compiler: front end: 18f05c733c33599f-5527019
+== compiler: Tcl: 9.0.1
+sqlite 0.1.0 (sha256 7a6e59e3933d): installed
+view linux-x86_64: derived (9 files, 2 native libraries)
+added sqlite (request "0.1", lock 0.1.0)
+note: target views: linux-x86_64 (verify -target T verifies one's native dependencies again)
+verify: 1 package instance(s) in /home/markus/sqlite-cleanroom/build/final: as installed
+(integrity only: installed bytes against local artifacts and the installation record; no artifact carries a publisher signature to authenticate)
+== native plan: native plan for linux-x86_64 (this host), project /home/markus/sqlite-cleanroom/build/final
+== native plan:   library botsqlite3: bundled static (instance sqlite)
+== native plan:     an ar archive of 1 ELF x86-64 object; bundled file, sha256 8add430d9b27
+== native plan:     /home/markus/sqlite-cleanroom/build/final/.bot_modules/.targets/linux-x86_64/sqlite/native/libbotsqlite3.a
+== native plan:   library m: system shared (instance sqlite)
+== native plan:     a linker script; dpkg package libc6-dev:amd64, version 2.39-0ubuntu8.9
+== native plan:     /usr/lib/x86_64-linux-gnu/libm.so
+== native plan: link: the compiler links these from the target package tree (.bot_modules/.targets/linux-x86_64, its .lib): no -L is needed for bundled libraries
+== build
+built info
+built ac_basic
+built ac_values
+built ac_persistence
+built ac_errors
+built ac_transactions
+built ac_resources
+built ac_contention
+built ac_composition
+built interop_write
+built interop_read
+built tasklist
+built kv
+== info
+sqlite version:    3.54.1
+sqlite number:     3054001
+sqlite source id:  2026-10-16 14:45:20 555e07ef33f69a0957d24d8e555b702464a131d6f1607f4c3c1e4551e8e6ca76
+threading mode:    1 (1 = serialized)
+== acceptance programs
+PASS ac_basic: RESULT passed=26 failed=0
+PASS ac_values: RESULT passed=63 failed=0
+PASS ac_persistence: RESULT passed=24 failed=0
+PASS ac_errors: RESULT passed=52 failed=0
+PASS ac_transactions: RESULT passed=28 failed=0
+PASS ac_resources: RESULT passed=32 failed=0
+PASS ac_contention: RESULT passed=20 failed=0
+PASS ac_composition: RESULT passed=12 failed=0
+== independent oracle (sqlite.org's own sqlite3 shell)
+oracle: 3.54.1 2026-10-16 14:45:20 555e07ef33f69
+interop.db written
+RESULT passed=11 failed=0
+RESULT oracle ok
+PASS oracle: 25 checks
+== applications across processes
+PASS tasklist: persistence across 9 processes
+PASS tasklist: bad input exits 1
+PASS kv: persistence across 6 processes
+== summary: 257 checks in the acceptance programs
+ACCEPTANCE OK
