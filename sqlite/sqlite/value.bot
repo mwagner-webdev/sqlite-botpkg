@@ -47,28 +47,28 @@ opaque struct Value:
     text: str
     blob: std::abi::bytes::Bytes
 
-fn no_bytes() -> std::abi::bytes::Bytes:
+private nomethod fn no_bytes() -> std::abi::bytes::Bytes:
     std::abi::bytes::from_list([])
 
-fn null() -> Value:
+nomethod fn null() -> Value:
     Value {kind: Kind::Null, integer: 0, real: 0.0, text: "", blob: no_bytes()}
 
-fn integer(n: Int64) -> Value:
+nomethod fn integer(n: Int64) -> Value:
     Value {kind: Kind::Integer, integer: n, real: 0.0, text: "", blob: no_bytes()}
 
 # The INTEGER of an arbitrary Int, or IntegerOutOfRange.
-fn integer_of(n: int) -> Value errors IntegerOutOfRange:
+nomethod fn integer_of(n: int) -> Value errors IntegerOutOfRange:
     if n < -9223372036854775808 or n > 9223372036854775807:
         fail IntegerOutOfRange
     integer(n)
 
-fn real(x: Float64) -> Value:
+nomethod fn real(x: Float64) -> Value:
     Value {kind: Kind::Real, integer: 0, real: x, text: "", blob: no_bytes()}
 
-fn text(s: str) -> Value:
+nomethod fn text(s: str) -> Value:
     Value {kind: Kind::Text, integer: 0, real: 0.0, text: s, blob: no_bytes()}
 
-fn blob(b: std::abi::bytes::Bytes) -> Value:
+nomethod fn blob(b: std::abi::bytes::Bytes) -> Value:
     Value {kind: Kind::Blob, integer: 0, real: 0.0, text: "", blob: b}
 
 fn kind(v: Value) -> Kind:
@@ -77,7 +77,7 @@ fn kind(v: Value) -> Kind:
 fn null?(v: Value) -> bool:
     v.kind == Kind::Null
 
-fn kind_name(k: Kind) -> str:
+nomethod fn kind_name(k: Kind) -> str:
     if k == Kind::Null:
         return "NULL"
     if k == Kind::Integer:
@@ -137,7 +137,7 @@ opaque struct Row:
     names: List[str]
     values: List[Value]
 
-fn row(names: List[str], values: List[Value]) -> Row:
+nomethod fn row(names: List[str], values: List[Value]) -> Row:
     Row {names: names, values: values}
 
 fn width(r: Row) -> int:
@@ -154,7 +154,7 @@ fn column(r: Row, index: int) -> Value errors NoSuchColumn:
         on IndexNotFound:
             fail NoSuchColumn
 
-fn index_from(names: List[str], name: str, i: int) -> int errors NoSuchName:
+private fn index_from(names: List[str], name: str, i: int) -> int errors NoSuchName:
     if i < 0 or i >= names.length():
         fail NoSuchName
     if names.at(i) == name:

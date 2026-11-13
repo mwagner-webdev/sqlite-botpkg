@@ -40,33 +40,33 @@ struct Info:
 error Failure:
     info: Info
 
-fn info(kind: ErrorKind, code: int, extended: int, message: str, operation: str) -> Info:
+nomethod fn info(kind: ErrorKind, code: int, extended: int, message: str, operation: str) -> Info:
     Info {kind: kind, code: code, extended: extended, message: message, operation: operation}
 
 # SQLITE_* primary result codes (sqlite3.h).
-fn code_error() -> int:
+private nomethod fn code_error() -> int:
     1
 
-fn code_busy() -> int:
+private nomethod fn code_busy() -> int:
     5
 
-fn code_locked() -> int:
+private nomethod fn code_locked() -> int:
     6
 
-fn code_constraint() -> int:
+private nomethod fn code_constraint() -> int:
     19
 
-fn code_misuse() -> int:
+private nomethod fn code_misuse() -> int:
     21
 
-fn code_row() -> int:
+private nomethod fn code_row() -> int:
     100
 
-fn code_done() -> int:
+private nomethod fn code_done() -> int:
     101
 
 # The kind of a result code. The extended code's low byte is the primary code, so either may be passed.
-fn classify(code: int) -> ErrorKind:
+nomethod fn classify(code: int) -> ErrorKind:
     primary = code.mod(256)
     if primary == 19:
         return ErrorKind::Constraint
@@ -94,7 +94,7 @@ fn classify(code: int) -> ErrorKind:
         return ErrorKind::Resource
     ErrorKind::Other
 
-fn kind_name(k: ErrorKind) -> str:
+nomethod fn kind_name(k: ErrorKind) -> str:
     if k == ErrorKind::Constraint:
         return "constraint"
     if k == ErrorKind::Busy:
