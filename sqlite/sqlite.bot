@@ -1,0 +1,1169 @@
+# sqlite -- the original SQLite 3 engine, as a Botlish package.
+#
+# See README.md. In short:
+#
+#   import sqlite
+#   import sqlite::value
+#
+#   with context sqlite::engine()           # the application installs the capability once, at startup
+#   db = sqlite::open_memory()              # a Connection handle
+#   db.execute("create table t(id integer primary key, name text)", [])
+#   db.execute("insert into t(name) values (?)", [sqlite::value::text("Ada")])
+#   rows = db.query("select id, name from t", [])
+#   db.close()
+#
+# Ownership: the Engine context owns every native SQLite handle (sqlite3*, sqlite3_stmt*) and every buffer the
+# package hands SQLite. A Connection and a Statement are small copyable *handles* (an engine identity, a slot,
+# a generation): they own nothing, and a handle to a closed connection or statement is detected, never
+# dereferenced. Closing a connection finalizes its statements first. See "Resource ownership" in README.md.
+import sqlite::failure
+import sqlite::value
+import std::abi
+import std::abi::bytes
+import std::binary
+import std::binary::native
+import std::byte
+import std::ffi::c
+import std::int
+import std::list
+import std::mutable_vector
+import std::str
+
+extern c library "botsqlite3"
+extern c library "m"
+
+# --- the C boundary (private: nothing below is part of the package's interface) ------------------------------
+
+opaque struct Db:
+    tag: unit
+
+opaque struct Stmt:
+    tag: unit
+
+extern c fn sqlite3_initialize() -> std::ffi::c::Int
+extern c fn sqlite3_libversion_number() -> std::ffi::c::Int
+extern c fn sqlite3_threadsafe() -> std::ffi::c::Int
+extern c fn sqlite3_libversion() -> std::ffi::c::Ptr[std::ffi::c::Char] independent
+extern c fn sqlite3_sourceid() -> std::ffi::c::Ptr[std::ffi::c::Char] independent
+extern c fn sqlite3_malloc64(n: std::ffi::c::ULongLong) -> std::ffi::c::Ptr[std::ffi::c::Void] independent
+extern c fn sqlite3_free(p: std::ffi::c::Ptr[std::ffi::c::Void]) -> unit
+extern c fn sqlite3_randomness(n: std::ffi::c::Int, buf: std::ffi::c::Ptr[std::ffi::c::Void] write noescape) -> unit
+
+extern c fn sqlite3_open_v2(
+    filename: std::ffi::c::Ptr[std::ffi::c::Char] read noescape,
+    out: std::ffi::c::Ptr[std::ffi::c::Ptr[Db]] noescape,
+    flags: std::ffi::c::Int,
+    vfs: std::ffi::c::Ptr[std::ffi::c::Char]
+) -> std::ffi::c::Int
+extern c fn sqlite3_close_v2(db: std::ffi::c::Ptr[Db]) -> std::ffi::c::Int
+extern c fn sqlite3_errmsg(db: std::ffi::c::Ptr[Db]) -> std::ffi::c::Ptr[std::ffi::c::Char] independent
+extern c fn sqlite3_extended_errcode(db: std::ffi::c::Ptr[Db]) -> std::ffi::c::Int
+extern c fn sqlite3_extended_result_codes(db: std::ffi::c::Ptr[Db], enable: std::ffi::c::Int) -> std::ffi::c::Int
+extern c fn sqlite3_busy_timeout(db: std::ffi::c::Ptr[Db], ms: std::ffi::c::Int) -> std::ffi::c::Int
+extern c fn sqlite3_get_autocommit(db: std::ffi::c::Ptr[Db]) -> std::ffi::c::Int
+extern c fn sqlite3_changes64(db: std::ffi::c::Ptr[Db]) -> std::ffi::c::LongLong
+extern c fn sqlite3_total_changes64(db: std::ffi::c::Ptr[Db]) -> std::ffi::c::LongLong
+extern c fn sqlite3_last_insert_rowid(db: std::ffi::c::Ptr[Db]) -> std::ffi::c::LongLong
+extern c fn sqlite3_exec(
+    db: std::ffi::c::Ptr[Db],
+    sql: std::ffi::c::Ptr[std::ffi::c::Char] read noescape,
+    callback: std::ffi::c::Ptr[std::ffi::c::Void],
+    arg: std::ffi::c::Ptr[std::ffi::c::Void],
+    errmsg: std::ffi::c::Ptr[std::ffi::c::Ptr[std::ffi::c::Char]]
+) -> std::ffi::c::Int
+
+extern c fn sqlite3_prepare_v2(
+    db: std::ffi::c::Ptr[Db],
+    sql: std::ffi::c::Ptr[std::ffi::c::Char] read noescape,
+    nbyte: std::ffi::c::Int,
+    out: std::ffi::c::Ptr[std::ffi::c::Ptr[Stmt]] noescape,
+    tail: std::ffi::c::Ptr[std::ffi::c::Ptr[std::ffi::c::Char]]
+) -> std::ffi::c::Int
+extern c fn sqlite3_step(s: std::ffi::c::Ptr[Stmt]) -> std::ffi::c::Int
+extern c fn sqlite3_reset(s: std::ffi::c::Ptr[Stmt]) -> std::ffi::c::Int
+extern c fn sqlite3_clear_bindings(s: std::ffi::c::Ptr[Stmt]) -> std::ffi::c::Int
+extern c fn sqlite3_finalize(s: std::ffi::c::Ptr[Stmt]) -> std::ffi::c::Int
+extern c fn sqlite3_bind_parameter_count(s: std::ffi::c::Ptr[Stmt]) -> std::ffi::c::Int
+extern c fn sqlite3_bind_null(s: std::ffi::c::Ptr[Stmt], i: std::ffi::c::Int) -> std::ffi::c::Int
+extern c fn sqlite3_bind_int64(s: std::ffi::c::Ptr[Stmt], i: std::ffi::c::Int, v: std::ffi::c::LongLong) -> std::ffi::c::Int
+extern c fn sqlite3_bind_double(s: std::ffi::c::Ptr[Stmt], i: std::ffi::c::Int, v: std::ffi::c::Double) -> std::ffi::c::Int
+extern c fn sqlite3_bind_zeroblob(s: std::ffi::c::Ptr[Stmt], i: std::ffi::c::Int, n: std::ffi::c::Int) -> std::ffi::c::Int
+extern c fn sqlite3_bind_text64(
+    s: std::ffi::c::Ptr[Stmt],
+    i: std::ffi::c::Int,
+    p: std::ffi::c::Ptr[std::ffi::c::Void] captures,
+    n: std::ffi::c::ULongLong,
+    destructor: std::ffi::c::Ptr[std::ffi::c::Void],
+    encoding: std::ffi::c::UChar
+) -> std::ffi::c::Int
+extern c fn sqlite3_bind_blob64(
+    s: std::ffi::c::Ptr[Stmt],
+    i: std::ffi::c::Int,
+    p: std::ffi::c::Ptr[std::ffi::c::Void] captures,
+    n: std::ffi::c::ULongLong,
+    destructor: std::ffi::c::Ptr[std::ffi::c::Void]
+) -> std::ffi::c::Int
+extern c fn sqlite3_column_count(s: std::ffi::c::Ptr[Stmt]) -> std::ffi::c::Int
+extern c fn sqlite3_column_name(s: std::ffi::c::Ptr[Stmt], i: std::ffi::c::Int) -> std::ffi::c::Ptr[std::ffi::c::Char] independent
+extern c fn sqlite3_column_type(s: std::ffi::c::Ptr[Stmt], i: std::ffi::c::Int) -> std::ffi::c::Int
+extern c fn sqlite3_column_int64(s: std::ffi::c::Ptr[Stmt], i: std::ffi::c::Int) -> std::ffi::c::LongLong
+extern c fn sqlite3_column_double(s: std::ffi::c::Ptr[Stmt], i: std::ffi::c::Int) -> std::ffi::c::Double
+extern c fn sqlite3_column_text(s: std::ffi::c::Ptr[Stmt], i: std::ffi::c::Int) -> std::ffi::c::Ptr[std::ffi::c::Void] independent
+extern c fn sqlite3_column_blob(s: std::ffi::c::Ptr[Stmt], i: std::ffi::c::Int) -> std::ffi::c::Ptr[std::ffi::c::Void] independent
+extern c fn sqlite3_column_bytes(s: std::ffi::c::Ptr[Stmt], i: std::ffi::c::Int) -> std::ffi::c::Int
+
+# libc (C99/POSIX, present on Linux and macOS): copying between SQLite-owned memory and Botlish bytes.
+extern c fn strlen(s: std::ffi::c::Ptr[std::ffi::c::Char] read noescape) -> std::ffi::c::ULong
+extern c fn memcpy_out named "memcpy"(
+    dst: std::ffi::c::Ptr[std::ffi::c::Void] write noescape,
+    src: std::ffi::c::Ptr[std::ffi::c::Void] read noescape,
+    n: std::ffi::c::ULong
+) -> std::ffi::c::Ptr[std::ffi::c::Void] alias dst
+extern c fn memcpy_in named "memcpy"(
+    dst: std::ffi::c::Ptr[std::ffi::c::Void] write noescape,
+    src: std::ffi::c::Ptr[std::ffi::c::Void] read noescape,
+    n: std::ffi::c::ULong
+) -> std::ffi::c::Ptr[std::ffi::c::Void] alias dst
+
+# --- handles and the engine ---------------------------------------------------------------------------------
+
+# A database connection. A handle owns nothing: the Engine owns the sqlite3*. It is a plain value (copy it,
+# keep it in a struct, compare it); using it after close() fails with a `misuse` Failure.
+opaque struct Connection:
+    engine: int
+    slot: int
+    gen: int
+
+# A prepared statement; same rules as Connection. It belongs to the connection it was prepared on and is
+# invalidated when that connection closes.
+opaque struct Statement:
+    engine: int
+    slot: int
+    gen: int
+
+opaque struct ConnSlot:
+    db: std::ffi::c::Ptr[Db]
+    gen: int
+
+opaque struct StmtSlot:
+    stmt: std::ffi::c::Ptr[Stmt]
+    gen: int
+    conn: int
+    names: List[str]
+
+# A native copy of one bound TEXT or BLOB value, owned by the statement it was bound to (SQLITE_STATIC).
+opaque struct Buffer:
+    stmt: int
+    mem: std::ffi::c::Ptr[std::ffi::c::Void]
+
+layout PtrSlot:
+    size 8
+    align 8
+    field p: std::ffi::c::Ptr[Db] at 0
+
+layout StmtPtrSlot:
+    size 8
+    align 8
+    field p: std::ffi::c::Ptr[Stmt] at 0
+
+# 52 random bits: a domain narrow enough for a native context slot's small-Int representation.
+type EngineIdent = Int in 0..4503599627370495
+
+layout EngineId:
+    size 8
+    align 4
+    field lo: std::binary::U32 at 0
+    field hi: std::binary::U32 at 4
+
+# The capability a program installs once, at startup (`with context sqlite::engine()`), and that every
+# function using the package requires. It owns all native state; nothing is global.
+opaque context struct Engine:
+    id: EngineIdent
+    scratch: std::ffi::c::Ptr[std::ffi::c::Void]
+    conns: MutableVector[ConnSlot]
+    stmts: MutableVector[StmtSlot]
+    free_conns: MutableVector[int]
+    free_stmts: MutableVector[int]
+    depth: MutableVector[int]
+    arena: MutableVector[Buffer]
+
+fn nul() -> std::byte::Byte:
+    0
+
+fn no_bytes() -> std::abi::bytes::Bytes:
+    std::abi::bytes::from_list([])
+
+fn cstr(text: str) -> std::abi::bytes::Bytes:
+    std::abi::bytes::from_list(std::str::encode_utf8(text).append(nul()))
+
+# SQLite lengths are C ints; SQLITE_MAX_LENGTH is 10^9, so anything bigger is refused up front.
+type Size = Int in 0..2147483646
+
+error TooBig
+
+fn size_of(b: std::abi::bytes::Bytes) -> Size errors TooBig:
+    n = std::abi::bytes::length(b).value
+    if n > 2147483646:
+        fail TooBig
+    n
+
+# A new engine. Installed with `with context sqlite::engine()` in the entry program.
+fn engine() -> Engine:
+    ready = sqlite3_initialize()
+    scratch = sqlite3_malloc64(16)
+    seed = std::abi::bytes::zeroed(std::abi::usize(8))
+    filled = sqlite3_randomness(8, seed)
+    raw = std::binary::parse(EngineId, std::abi::bytes::freeze(filled.buf)):
+        on LayoutLengthMismatch:
+            LayoutStruct[EngineId] {lo: 1, hi: 1}
+    Engine {
+        id: raw.lo + bit_and(raw.hi, 1048575) * 4294967296,
+        scratch: scratch,
+        conns: std::mutable_vector::from_list([]),
+        stmts: std::mutable_vector::from_list([]),
+        free_conns: std::mutable_vector::from_list([]),
+        free_stmts: std::mutable_vector::from_list([]),
+        depth: std::mutable_vector::from_list([]),
+        arena: std::mutable_vector::from_list([])
+    }
+
+# --- copying out of SQLite-owned memory --------------------------------------------------------------------
+
+# The N bytes at SRC, copied into Botlish storage. SRC is SQLite's memory (valid only until the statement's
+# next step/reset/finalize); the result is independent of it.
+fn copy_out(src: std::ffi::c::Ptr[std::ffi::c::Void], n: int) -> std::abi::bytes::Bytes:
+    if n <= 0 or n > 2147483647:
+        return no_bytes()
+    buf = std::abi::bytes::zeroed(std::abi::usize(n))
+    filled = memcpy_out(buf, src, n)
+    std::abi::bytes::freeze(filled.dst)
+
+# A NUL-terminated UTF-8 string of SQLite's (an error message, a column name). Never fails.
+fn cstring(p: std::ffi::c::Ptr[std::ffi::c::Char]) -> str:
+    if p.null?():
+        return ""
+    n = strlen(p)
+    raw = copy_out(p.erase(), n)
+    std::abi::bytes::decode_utf8(raw):
+        on InvalidUtf8:
+            "(invalid UTF-8 in SQLite string)"
+
+# --- failures ----------------------------------------------------------------------------------------------
+
+fn misuse(message: str, operation: str) -> sqlite::failure::Info:
+    sqlite::failure::info(sqlite::failure::ErrorKind::Misuse, 21, 21, message, operation)
+
+fn stale(operation: str) -> sqlite::failure::Info:
+    misuse("the handle is closed, finalized, or was made by another engine", operation)
+
+fn from_code(rc: int, message: str, operation: str) -> sqlite::failure::Info:
+    sqlite::failure::info(sqlite::failure::classify(rc), rc.mod(256), rc, message, operation)
+
+fn db_message(i: int, context e: Engine) -> str errors IndexNotFound:
+    p = sqlite3_errmsg(e.conns.element(i).db)
+    cstring(p)
+
+fn db_extended(i: int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_extended_errcode(e.conns.element(i).db)
+
+# SQLite's extended code when it is an extension of RC's primary code, else RC.
+fn if_extended(ext: int, rc: int) -> int:
+    if ext.mod(256) == rc.mod(256):
+        return ext
+    rc
+
+# The Info of result code RC on connection slot I.
+fn db_info(i: int, rc: int, operation: str, context e: Engine) -> sqlite::failure::Info:
+    msg = db_message(i):
+        on IndexNotFound:
+            "(connection gone)"
+    ext = db_extended(i):
+        on IndexNotFound:
+            rc
+    from_code(if_extended(ext, rc), msg, operation)
+
+# --- connection handles ------------------------------------------------------------------------------------
+
+fn conn_gen(i: int, context e: Engine) -> int errors IndexNotFound:
+    e.conns.element(i).gen
+
+fn conn_live?(c: Connection, context e: Engine) -> bool:
+    if c.engine != e.id:
+        return false
+    g = conn_gen(c.slot):
+        on IndexNotFound:
+            return false
+    g == c.gen
+
+fn stmt_gen(i: int, context e: Engine) -> int errors IndexNotFound:
+    e.stmts.element(i).gen
+
+fn stmt_live?(s: Statement, context e: Engine) -> bool:
+    if s.engine != e.id:
+        return false
+    g = stmt_gen(s.slot):
+        on IndexNotFound:
+            return false
+    g == s.gen
+
+fn conn_push(db: std::ffi::c::Ptr[Db], context e: Engine) -> Connection:
+    slot = e.conns.length()
+    e.conns.push(ConnSlot {db: db, gen: 0})
+    e.depth.push(0)
+    Connection {engine: e.id, slot: slot, gen: 0}
+
+fn conn_reuse(i: int, db: std::ffi::c::Ptr[Db], context e: Engine) -> Connection errors IndexNotFound:
+    g = e.conns.element(i).gen
+    ignored = e.conns.swap(i, ConnSlot {db: db, gen: g})
+    zeroed = e.depth.swap(i, 0)
+    Connection {engine: e.id, slot: i, gen: g}
+
+# Moves DB into the engine's table. Never fails: a reused slot index always exists.
+fn conn_register(db: std::ffi::c::Ptr[Db], context e: Engine) -> Connection:
+    reused = e.free_conns.pop():
+        on IndexNotFound:
+            -1
+    if reused < 0:
+        return conn_push(db)
+    conn_reuse(reused, db):
+        on IndexNotFound:
+            Connection {engine: e.id, slot: -1, gen: -1}
+
+# --- statement slots and bound-value buffers ---------------------------------------------------------------
+
+fn arena_owner(j: int, context e: Engine) -> int errors IndexNotFound:
+    e.arena.element(j).stmt
+
+# Frees every native buffer owned by statement slot K, scanning the arena from index J down.
+fn arena_sweep(k: int, j: int, context e: Engine) -> unit:
+    if j < 0:
+        return unit
+    owner = arena_owner(j):
+        on IndexNotFound:
+            return unit
+    if owner == k:
+        gone = e.arena.take(j):
+            on IndexNotFound:
+                return unit
+        {mem} = gone
+        sqlite3_free(mem)
+    arena_sweep(k, j - 1)
+
+fn arena_free(k: int, context e: Engine) -> unit:
+    arena_sweep(k, e.arena.length() - 1)
+
+# A native copy of DATA's bytes (plus a trailing zero byte) that statement slot K owns until it is reset,
+# cleared or finalized. Returns the buffer's address to bind.
+fn arena_copy(k: int, data: std::abi::bytes::Bytes, context e: Engine) -> std::ffi::c::Ptr[std::ffi::c::Void] errors TooBig:
+    n = size_of(data)
+    mem = sqlite3_malloc64(n + 1)
+    bound = mem.clone()
+    filled = memcpy_in(bound, data, n)
+    e.arena.push(Buffer {stmt: k, mem: mem})
+    bound
+
+fn stmt_push(ptr: std::ffi::c::Ptr[Stmt], conn: int, names: List[str], context e: Engine) -> Statement:
+    slot = e.stmts.length()
+    e.stmts.push(StmtSlot {stmt: ptr, gen: 0, conn: conn, names: names})
+    Statement {engine: e.id, slot: slot, gen: 0}
+
+fn stmt_reuse(i: int, ptr: std::ffi::c::Ptr[Stmt], conn: int, names: List[str], context e: Engine) -> Statement errors IndexNotFound:
+    g = e.stmts.element(i).gen
+    ignored = e.stmts.swap(i, StmtSlot {stmt: ptr, gen: g, conn: conn, names: names})
+    Statement {engine: e.id, slot: i, gen: g}
+
+fn stmt_register(ptr: std::ffi::c::Ptr[Stmt], conn: int, names: List[str], context e: Engine) -> Statement:
+    reused = e.free_stmts.pop():
+        on IndexNotFound:
+            -1
+    if reused < 0:
+        return stmt_push(ptr, conn, names)
+    stmt_reuse(reused, ptr, conn, names):
+        on IndexNotFound:
+            Statement {engine: e.id, slot: -1, gen: -1}
+
+# Finalizes statement slot K (whatever its state) and releases everything it owned. Returns finalize's code.
+fn stmt_release(k: int, context e: Engine) -> int errors IndexNotFound:
+    g = e.stmts.element(k).gen
+    nostmt = std::ffi::c::null[Stmt]()
+    old = e.stmts.swap(k, StmtSlot {stmt: nostmt, gen: g + 1, conn: -1, names: []})
+    {stmt} = old
+    rc = sqlite3_finalize(stmt)
+    arena_free(k)
+    e.free_stmts.push(k)
+    rc
+
+fn stmt_conn(k: int, context e: Engine) -> int errors IndexNotFound:
+    e.stmts.element(k).conn
+
+fn stmt_dead?(k: int, context e: Engine) -> bool errors IndexNotFound:
+    e.stmts.element(k).stmt.null?()
+
+# Finalizes every live statement of connection slot C, from slot index K upward.
+fn stmts_release_of(c: int, k: int, context e: Engine) -> unit:
+    if k >= e.stmts.length():
+        return unit
+    owner = stmt_conn(k):
+        on IndexNotFound:
+            return unit
+    dead = stmt_dead?(k):
+        on IndexNotFound:
+            true
+    if owner == c and not dead:
+        rc = stmt_release(k):
+            on IndexNotFound:
+                0
+    stmts_release_of(c, k + 1)
+
+# --- closing and opening -----------------------------------------------------------------------------------
+
+# Closes connection slot I: finalizes its statements, then sqlite3_close_v2. Returns the close code.
+fn conn_release(i: int, context e: Engine) -> int errors IndexNotFound:
+    stmts_release_of(i, 0)
+    g = e.conns.element(i).gen
+    nodb = std::ffi::c::null[Db]()
+    old = e.conns.swap(i, ConnSlot {db: nodb, gen: g + 1})
+    {db} = old
+    rc = sqlite3_close_v2(db)
+    e.free_conns.push(i)
+    zeroed = e.depth.swap(i, 0)
+    rc
+
+fn open_flags(mode: int) -> std::ffi::c::Int:
+    if mode == 1:
+        return 1
+    if mode == 2:
+        return 2
+    6
+
+# Out-slot read: the sqlite3* sqlite3_open_v2 stored in the scratch slot.
+fn scratch_db(context e: Engine) -> std::ffi::c::Ptr[Db] errors NativeViewNull:
+    view = std::binary::native::view(PtrSlot, e.scratch)
+    view.p
+
+fn open_failure(db: std::ffi::c::Ptr[Db], rc: int) -> sqlite::failure::Info:
+    from_code(rc, "unable to open database", "open")
+
+fn open_raw(path: str, mode: int, context e: Engine) -> Connection errors sqlite::failure::Failure:
+    name = cstr(path)
+    out = e.scratch.clone().retype[std::ffi::c::Ptr[Db]]()
+    novfs = std::ffi::c::null[std::ffi::c::Char]()
+    rc = sqlite3_open_v2(name, out, open_flags(mode), novfs)
+    db = scratch_db():
+        on NativeViewNull:
+            fail sqlite::failure::Failure {info: misuse("engine scratch slot is null", "open")}
+    if rc != 0 and db.null?():
+        fail sqlite::failure::Failure {info: from_code(rc, "out of memory opening database", "open")}
+    if rc != 0:
+        message = cstring(sqlite3_errmsg(db))
+        ext = sqlite3_extended_errcode(db)
+        closed = sqlite3_close_v2(db)
+        fail sqlite::failure::Failure {info: from_code(if_extended(ext, rc), message, "open")}
+    enabled = sqlite3_extended_result_codes(db, 1)
+    conn_register(db)
+
+# --- public API: library identity ---------------------------------------------------------------------------
+
+# The SQLite library's version text, e.g. "3.54.1".
+fn version() -> str:
+    cstring(sqlite3_libversion())
+
+# SQLITE_VERSION_NUMBER, e.g. 3054001.
+fn version_number() -> int:
+    sqlite3_libversion_number()
+
+# The check-in identifier of the SQLite source (sqlite3_sourceid).
+fn source_id() -> str:
+    cstring(sqlite3_sourceid())
+
+# SQLite's compile-time threading mode: 0 single-thread, 1 serialized, 2 multi-thread.
+fn thread_mode() -> int:
+    sqlite3_threadsafe()
+
+# --- public API: connections ---------------------------------------------------------------------------------
+
+# Opens (creating if absent) the database file at PATH, read-write.
+fn open(path: str) -> Connection errors sqlite::failure::Failure:
+    open_raw(path, 0)
+
+# Opens an existing database file read-only: writes fail with a `read-only` Failure.
+fn open_read_only(path: str) -> Connection errors sqlite::failure::Failure:
+    open_raw(path, 1)
+
+# Opens an existing database file read-write; a missing file is a `cant-open` Failure (it is not created).
+fn open_existing(path: str) -> Connection errors sqlite::failure::Failure:
+    open_raw(path, 2)
+
+# Opens a private in-memory database; it vanishes when the connection closes.
+fn open_memory() -> Connection errors sqlite::failure::Failure:
+    open_raw(":memory:", 0)
+
+# Whether the handle still names an open connection of this engine.
+fn open?(c: Connection, context e: Engine) -> bool:
+    conn_live?(c)
+
+# Closes the connection after finalizing every statement prepared on it (their handles become invalid).
+# Closing a handle that is already closed is a `misuse` Failure; nothing is freed twice.
+fn close(c: Connection, context e: Engine) -> unit errors sqlite::failure::Failure:
+    if not conn_live?(c):
+        fail sqlite::failure::Failure {info: stale("close")}
+    rc = conn_release(c.slot):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("close")}
+    if rc != 0:
+        fail sqlite::failure::Failure {info: from_code(rc, "sqlite3_close_v2 failed", "close")}
+
+# The number of connections and statements this engine still owns (for leak checks and shutdown logic).
+fn open_connections(context e: Engine) -> int:
+    e.conns.length() - e.free_conns.length()
+
+fn open_statements(context e: Engine) -> int:
+    e.stmts.length() - e.free_stmts.length()
+
+# --- statement and connection calls through the table (each reaches a native handle where the engine stores it) --
+
+fn c_step(k: int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_step(e.stmts.element(k).stmt)
+
+fn c_reset(k: int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_reset(e.stmts.element(k).stmt)
+
+fn c_clear(k: int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_clear_bindings(e.stmts.element(k).stmt)
+
+fn c_param_count(k: int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_bind_parameter_count(e.stmts.element(k).stmt)
+
+fn c_col_count(k: int, context e: Engine) -> std::ffi::c::Int errors IndexNotFound:
+    sqlite3_column_count(e.stmts.element(k).stmt)
+
+fn c_col_type(k: int, i: std::ffi::c::Int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_column_type(e.stmts.element(k).stmt, i)
+
+fn c_col_int(k: int, i: std::ffi::c::Int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_column_int64(e.stmts.element(k).stmt, i)
+
+fn c_col_real(k: int, i: std::ffi::c::Int, context e: Engine) -> Float64 errors IndexNotFound, NonFiniteFloat:
+    sqlite3_column_double(e.stmts.element(k).stmt, i)
+
+fn c_col_text(k: int, i: std::ffi::c::Int, context e: Engine) -> std::abi::bytes::Bytes errors IndexNotFound:
+    p = sqlite3_column_text(e.stmts.element(k).stmt, i)
+    n = sqlite3_column_bytes(e.stmts.element(k).stmt, i)
+    copy_out(p, n)
+
+fn c_col_blob(k: int, i: std::ffi::c::Int, context e: Engine) -> std::abi::bytes::Bytes errors IndexNotFound:
+    p = sqlite3_column_blob(e.stmts.element(k).stmt, i)
+    n = sqlite3_column_bytes(e.stmts.element(k).stmt, i)
+    copy_out(p, n)
+
+fn c_col_name(k: int, i: std::ffi::c::Int, context e: Engine) -> str errors IndexNotFound:
+    cstring(sqlite3_column_name(e.stmts.element(k).stmt, i))
+
+fn c_bind_null(k: int, i: std::ffi::c::Int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_bind_null(e.stmts.element(k).stmt, i)
+
+fn c_bind_int(k: int, i: std::ffi::c::Int, v: std::ffi::c::LongLong, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_bind_int64(e.stmts.element(k).stmt, i, v)
+
+fn c_bind_real(k: int, i: std::ffi::c::Int, v: std::ffi::c::Double, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_bind_double(e.stmts.element(k).stmt, i, v)
+
+fn c_bind_empty_blob(k: int, i: std::ffi::c::Int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_bind_zeroblob(e.stmts.element(k).stmt, i, 0)
+
+# Binds the arena buffer at MEM (N bytes) as TEXT (static: SQLite never frees or moves it).
+fn c_bind_text(k: int, i: std::ffi::c::Int, mem: std::ffi::c::Ptr[std::ffi::c::Void], n: Size, context e: Engine) -> int errors IndexNotFound:
+    static = std::ffi::c::null[std::ffi::c::Void]()
+    sqlite3_bind_text64(e.stmts.element(k).stmt, i, mem, n, static, 1)
+
+fn c_bind_blob(k: int, i: std::ffi::c::Int, mem: std::ffi::c::Ptr[std::ffi::c::Void], n: Size, context e: Engine) -> int errors IndexNotFound:
+    static = std::ffi::c::null[std::ffi::c::Void]()
+    sqlite3_bind_blob64(e.stmts.element(k).stmt, i, mem, n, static)
+
+fn c_changes(i: int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_changes64(e.conns.element(i).db)
+
+fn c_total_changes(i: int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_total_changes64(e.conns.element(i).db)
+
+fn c_last_rowid(i: int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_last_insert_rowid(e.conns.element(i).db)
+
+fn c_autocommit(i: int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_get_autocommit(e.conns.element(i).db)
+
+fn c_busy_timeout(i: int, ms: std::ffi::c::Int, context e: Engine) -> int errors IndexNotFound:
+    sqlite3_busy_timeout(e.conns.element(i).db, ms)
+
+fn c_exec(i: int, sql: std::abi::bytes::Bytes, context e: Engine) -> int errors IndexNotFound:
+    nocallback = std::ffi::c::null[std::ffi::c::Void]()
+    noarg = std::ffi::c::null[std::ffi::c::Void]()
+    noerr = std::ffi::c::null[std::ffi::c::Ptr[std::ffi::c::Char]]()
+    sqlite3_exec(e.conns.element(i).db, sql, nocallback, noarg, noerr)
+
+fn c_prepare(i: int, sql: std::abi::bytes::Bytes, n: std::ffi::c::Int, context e: Engine) -> int errors IndexNotFound:
+    out = e.scratch.clone().retype[std::ffi::c::Ptr[Stmt]]()
+    notail = std::ffi::c::null[std::ffi::c::Ptr[std::ffi::c::Char]]()
+    sqlite3_prepare_v2(e.conns.element(i).db, sql, n, out, notail)
+
+fn scratch_stmt(context e: Engine) -> std::ffi::c::Ptr[Stmt] errors NativeViewNull:
+    view = std::binary::native::view(StmtPtrSlot, e.scratch)
+    view.p
+
+fn stmt_names(k: int, context e: Engine) -> List[str] errors IndexNotFound:
+    e.stmts.element(k).names
+
+# --- failures of statement operations ----------------------------------------------------------------------
+
+# The Info of result code RC for statement slot K (its connection's message and extended code).
+fn stmt_info(k: int, rc: int, operation: str, context e: Engine) -> sqlite::failure::Info:
+    owner = stmt_conn(k):
+        on IndexNotFound:
+            return from_code(rc, "statement is gone", operation)
+    db_info(owner, rc, operation)
+
+fn too_big(operation: str) -> sqlite::failure::Info:
+    sqlite::failure::info(sqlite::failure::ErrorKind::Resource, 18, 18, "a TEXT, BLOB or SQL value exceeds 2 GiB", operation)
+
+# --- preparing -----------------------------------------------------------------------------------------------
+
+# The result columns' names of a freshly prepared statement.
+fn names_from(ptr: std::ffi::c::Ptr[Stmt], context e: Engine) -> List[str]:
+    count = sqlite3_column_count(ptr)
+    loop j from 0 to count:
+        cstring(sqlite3_column_name(ptr, j))
+
+# Prepares the first statement of SQL on connection slot CI and moves it into the engine's table.
+fn prepare_raw(ci: int, sql: str, context e: Engine) -> Statement errors sqlite::failure::Failure:
+    text = cstr(sql)
+    n = size_of(text):
+        on TooBig:
+            fail sqlite::failure::Failure {info: too_big("prepare")}
+    rc = c_prepare(ci, text, n + 1):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("prepare")}
+    if rc != 0:
+        fail sqlite::failure::Failure {info: db_info(ci, rc, "prepare")}
+    ptr = scratch_stmt():
+        on NativeViewNull:
+            fail sqlite::failure::Failure {info: misuse("engine scratch slot is null", "prepare")}
+    if ptr.null?():
+        fail sqlite::failure::Failure {info: misuse("the SQL text contains no statement", "prepare")}
+    names = names_from(ptr.clone())
+    stmt_register(ptr, ci, names)
+
+# --- binding values ------------------------------------------------------------------------------------------
+
+# Binds V at parameter INDEX of statement slot K. Returns SQLite's result code.
+fn bind_one(k: int, index: std::ffi::c::Int, v: sqlite::value::Value, context e: Engine) -> int errors sqlite::failure::Failure:
+    kind = sqlite::value::kind(v)
+    if kind == sqlite::value::Kind::Null:
+        return c_bind_null(k, index):
+            on IndexNotFound:
+                fail sqlite::failure::Failure {info: stale("bind")}
+    if kind == sqlite::value::Kind::Integer:
+        return c_bind_int(k, index, sqlite::value::integer_or(v, 0)):
+            on IndexNotFound:
+                fail sqlite::failure::Failure {info: stale("bind")}
+    if kind == sqlite::value::Kind::Real:
+        return c_bind_real(k, index, sqlite::value::real_or(v, 0.0)):
+            on IndexNotFound:
+                fail sqlite::failure::Failure {info: stale("bind")}
+    if kind == sqlite::value::Kind::Text:
+        data = std::abi::bytes::from_list(std::str::encode_utf8(sqlite::value::text_or(v, "")))
+        n = size_of(data):
+            on TooBig:
+                fail sqlite::failure::Failure {info: too_big("bind")}
+        mem = arena_copy(k, data):
+            on TooBig:
+                fail sqlite::failure::Failure {info: too_big("bind")}
+        return c_bind_text(k, index, mem, n):
+            on IndexNotFound:
+                fail sqlite::failure::Failure {info: stale("bind")}
+    data = sqlite::value::blob_or(v, no_bytes())
+    n = size_of(data):
+        on TooBig:
+            fail sqlite::failure::Failure {info: too_big("bind")}
+    if n == 0:
+        return c_bind_empty_blob(k, index):
+            on IndexNotFound:
+                fail sqlite::failure::Failure {info: stale("bind")}
+    mem = arena_copy(k, data):
+        on TooBig:
+            fail sqlite::failure::Failure {info: too_big("bind")}
+    c_bind_blob(k, index, mem, n):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("bind")}
+
+fn bind_from(k: int, values: List[sqlite::value::Value], i: int, context e: Engine) -> unit errors sqlite::failure::Failure:
+    if i < 0 or i >= values.length():
+        return unit
+    if i > 32766:
+        fail sqlite::failure::Failure {info: from_code(25, "parameter index out of range", "bind")}
+    rc = bind_one(k, i + 1, values.at(i))
+    if rc != 0:
+        fail sqlite::failure::Failure {info: stmt_info(k, rc, "bind")}
+    bind_from(k, values, i + 1)
+
+# --- reading values ------------------------------------------------------------------------------------------
+
+fn read_value(k: int, i: std::ffi::c::Int, context e: Engine) -> sqlite::value::Value errors sqlite::failure::Failure:
+    t = c_col_type(k, i):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("column")}
+    if t == 5:
+        return sqlite::value::null()
+    if t == 1:
+        n = c_col_int(k, i):
+            on IndexNotFound:
+                fail sqlite::failure::Failure {info: stale("column")}
+        return sqlite::value::integer_of(n):
+            on sqlite::value::IntegerOutOfRange:
+                fail sqlite::failure::Failure {info: misuse("INTEGER out of 64-bit range", "column")}
+    if t == 2:
+        x = c_col_real(k, i):
+            on IndexNotFound:
+                fail sqlite::failure::Failure {info: stale("column")}
+            on NonFiniteFloat:
+                fail sqlite::failure::Failure {info: sqlite::failure::info(sqlite::failure::ErrorKind::Encoding, 20, 20, "a REAL column holds an infinity, which a Float64 cannot represent", "column")}
+        return sqlite::value::real(x)
+    if t == 3:
+        raw = c_col_text(k, i):
+            on IndexNotFound:
+                fail sqlite::failure::Failure {info: stale("column")}
+        s = std::abi::bytes::decode_utf8(raw):
+            on InvalidUtf8:
+                fail sqlite::failure::Failure {info: sqlite::failure::info(sqlite::failure::ErrorKind::Encoding, 20, 20, "a TEXT column holds bytes that are not valid UTF-8", "column")}
+        return sqlite::value::text(s)
+    raw = c_col_blob(k, i):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("column")}
+    sqlite::value::blob(raw)
+
+fn read_row(k: int, context e: Engine) -> sqlite::value::Row errors sqlite::failure::Failure:
+    count = c_col_count(k):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("row")}
+    names = stmt_names(k):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("row")}
+    values = loop j from 0 to count:
+        read_value(k, j)
+    sqlite::value::row(names, values)
+
+# --- public API: statements ----------------------------------------------------------------------------------
+
+# Prepares the first statement of SQL on the connection. Parameters are `?`, `?NNN`, `:name`; bind them by
+# position (1-based) with bind/bind_all, or pass them to run/rows. Text after the first statement is
+# ignored (use execute_script for several statements).
+fn prepare(c: Connection, sql: str, context e: Engine) -> Statement errors sqlite::failure::Failure:
+    if not conn_live?(c):
+        fail sqlite::failure::Failure {info: stale("prepare")}
+    prepare_raw(c.slot, sql)
+
+# Finalizes the statement (and frees everything bound to it). The handle becomes invalid.
+fn finalize(s: Statement, context e: Engine) -> unit errors sqlite::failure::Failure:
+    if not stmt_live?(s):
+        fail sqlite::failure::Failure {info: stale("finalize")}
+    rc = stmt_release(s.slot):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("finalize")}
+    unit
+
+# Finalizes without reporting (for cleanup paths).
+fn discard(s: Statement, context e: Engine) -> unit:
+    if stmt_live?(s):
+        rc = stmt_release(s.slot):
+            on IndexNotFound:
+                0
+    unit
+
+# Rewinds the statement to its start and clears its bindings (and frees their native copies).
+fn reset(s: Statement, context e: Engine) -> unit errors sqlite::failure::Failure:
+    if not stmt_live?(s):
+        fail sqlite::failure::Failure {info: stale("reset")}
+    # sqlite3_reset repeats the last step's error code; the failure was already reported by step.
+    rc = c_reset(s.slot):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("reset")}
+    cleared = c_clear(s.slot):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("reset")}
+    arena_free(s.slot)
+    unit
+
+# The number of parameters the statement expects.
+fn parameter_count(s: Statement, context e: Engine) -> int errors sqlite::failure::Failure:
+    if not stmt_live?(s):
+        fail sqlite::failure::Failure {info: stale("parameter_count")}
+    c_param_count(s.slot):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("parameter_count")}
+
+# The names of the result columns, in order.
+fn column_names(s: Statement, context e: Engine) -> List[str] errors sqlite::failure::Failure:
+    if not stmt_live?(s):
+        fail sqlite::failure::Failure {info: stale("column_names")}
+    stmt_names(s.slot):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("column_names")}
+
+# Binds one value at the 1-based PARAMETER index. A bound TEXT/BLOB is copied: the statement owns the copy
+# until reset, finalize or the next run.
+fn bind(s: Statement, index: int, v: sqlite::value::Value, context e: Engine) -> unit errors sqlite::failure::Failure:
+    if not stmt_live?(s):
+        fail sqlite::failure::Failure {info: stale("bind")}
+    if index < 1 or index > 2147483647:
+        fail sqlite::failure::Failure {info: from_code(25, "parameter index out of range", "bind")}
+    rc = bind_one(s.slot, index, v)
+    if rc != 0:
+        fail sqlite::failure::Failure {info: stmt_info(s.slot, rc, "bind")}
+    unit
+
+# Binds VALUES at parameters 1.., and fails (`misuse`) unless their number is exactly the statement's.
+fn bind_all(s: Statement, values: List[sqlite::value::Value], context e: Engine) -> unit errors sqlite::failure::Failure:
+    wanted = s.parameter_count()
+    if wanted != values.length():
+        fail sqlite::failure::Failure {info: misuse("the statement takes a different number of parameters than were given", "bind")}
+    bind_from(s.slot, values, 0)
+
+# Advances to the next row: true when a row is available (read it with row), false when the statement is
+# done. A failure leaves the statement reset (usable again) and reports SQLite's code.
+fn step(s: Statement, context e: Engine) -> bool errors sqlite::failure::Failure:
+    if not stmt_live?(s):
+        fail sqlite::failure::Failure {info: stale("step")}
+    rc = c_step(s.slot):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("step")}
+    if rc == 100:
+        return true
+    if rc == 101:
+        return false
+    info = stmt_info(s.slot, rc, "step")
+    undone = c_reset(s.slot):
+        on IndexNotFound:
+            0
+    fail sqlite::failure::Failure {info: info}
+
+# The current row (after step returned true): independent copies of every column.
+fn row(s: Statement, context e: Engine) -> sqlite::value::Row errors sqlite::failure::Failure:
+    if not stmt_live?(s):
+        fail sqlite::failure::Failure {info: stale("row")}
+    read_row(s.slot)
+
+# --- public API: running statements -----------------------------------------------------------------------
+
+# A query that was expected to return a row returned none.
+error NoRows
+
+fn reset_quiet(s: Statement, context e: Engine) -> unit:
+    if stmt_live?(s):
+        rc = c_reset(s.slot):
+            on IndexNotFound:
+                0
+        cleared = c_clear(s.slot):
+            on IndexNotFound:
+                0
+        arena_free(s.slot)
+    unit
+
+fn conn_of(s: Statement, context e: Engine) -> int:
+    stmt_conn(s.slot):
+        on IndexNotFound:
+            -1
+
+fn total_changes_of(ci: int, context e: Engine) -> int:
+    c_total_changes(ci):
+        on IndexNotFound:
+            0
+
+fn changes_of(ci: int, context e: Engine) -> int:
+    c_changes(ci):
+        on IndexNotFound:
+            0
+
+fn drain(s: Statement, context e: Engine) -> unit errors sqlite::failure::Failure:
+    loop:
+        more = s.step()
+        if not more:
+            break
+    unit
+
+fn run_inner(s: Statement, params: List[sqlite::value::Value], context e: Engine) -> int errors sqlite::failure::Failure:
+    s.reset()
+    s.bind_all(params)
+    ci = conn_of(s)
+    before = total_changes_of(ci)
+    s.drain()
+    after = total_changes_of(ci)
+    changed = if after > before:
+        changes_of(ci)
+    else:
+        0
+    s.reset()
+    changed
+
+# Executes the statement to completion with PARAMS bound (exactly one per parameter), discarding any rows,
+# and returns the number of rows the statement itself inserted, updated or deleted (0 for any other
+# statement). The statement is reset afterwards -- bindings cleared, locks released -- so it can run again.
+# On failure it is reset too, and the Failure reported.
+fn run(s: Statement, params: List[sqlite::value::Value], context e: Engine) -> int errors sqlite::failure::Failure:
+    changed = run_inner(s, params):
+        on sqlite::failure::Failure f:
+            quiet = s.reset_quiet()
+            fail sqlite::failure::Failure {info: f.info}
+    changed
+
+fn no_rows() -> MutableVector[sqlite::value::Row]:
+    std::mutable_vector::from_list([])
+
+fn collect_rows(s: Statement, place rows: MutableVector[sqlite::value::Row], context e: Engine) -> unit errors sqlite::failure::Failure:
+    loop:
+        more = s.step()
+        if not more:
+            break
+        rows.push(s.row())
+    unit
+
+fn rows_inner(s: Statement, params: List[sqlite::value::Value], context e: Engine) -> List[sqlite::value::Row] errors sqlite::failure::Failure:
+    s.reset()
+    s.bind_all(params)
+    rows = no_rows()
+    collect_rows(s, rows)
+    s.reset()
+    loop r in rows:
+        r
+
+# Runs the statement with PARAMS and returns every row. Reset afterwards, like run.
+fn rows(s: Statement, params: List[sqlite::value::Value], context e: Engine) -> List[sqlite::value::Row] errors sqlite::failure::Failure:
+    all = rows_inner(s, params):
+        on sqlite::failure::Failure f:
+            quiet = s.reset_quiet()
+            fail sqlite::failure::Failure {info: f.info}
+    all
+
+# Prepares SQL, runs it with PARAMS and finalizes it, on every path. Returns the rows changed (see run).
+fn execute(c: Connection, sql: str, params: List[sqlite::value::Value], context e: Engine) -> int errors sqlite::failure::Failure:
+    s = c.prepare(sql)
+    changed = s.run(params):
+        on sqlite::failure::Failure f:
+            gone = s.discard()
+            fail sqlite::failure::Failure {info: f.info}
+    s.finalize()
+    changed
+
+# Prepares SQL, runs it with PARAMS, returns every row and finalizes the statement, on every path.
+fn query(c: Connection, sql: str, params: List[sqlite::value::Value], context e: Engine) -> List[sqlite::value::Row] errors sqlite::failure::Failure:
+    s = c.prepare(sql)
+    all = s.rows(params):
+        on sqlite::failure::Failure f:
+            gone = s.discard()
+            fail sqlite::failure::Failure {info: f.info}
+    s.finalize()
+    all
+
+fn first_row(s: Statement, params: List[sqlite::value::Value], context e: Engine) -> sqlite::value::Row errors sqlite::failure::Failure, NoRows:
+    s.reset()
+    s.bind_all(params)
+    more = s.step()
+    if not more:
+        fail NoRows
+    s.row()
+
+# The first row of the query, or NoRows. Further rows are not read. The statement is finalized on every path.
+fn query_one(c: Connection, sql: str, params: List[sqlite::value::Value], context e: Engine) -> sqlite::value::Row errors sqlite::failure::Failure, NoRows:
+    s = c.prepare(sql)
+    found = s.first_row(params):
+        on sqlite::failure::Failure f:
+            gone = s.discard()
+            fail sqlite::failure::Failure {info: f.info}
+        on NoRows:
+            gone = s.discard()
+            fail NoRows
+    gone = s.discard()
+    found
+
+# Runs SQL text holding any number of statements and no parameters (sqlite3_exec, no callback).
+fn execute_script(c: Connection, sql: str, context e: Engine) -> unit errors sqlite::failure::Failure:
+    if not conn_live?(c):
+        fail sqlite::failure::Failure {info: stale("execute_script")}
+    text = cstr(sql)
+    rc = c_exec(c.slot, text):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("execute_script")}
+    if rc != 0:
+        fail sqlite::failure::Failure {info: db_info(c.slot, rc, "execute_script")}
+    unit
+
+# The rowid of the most recent successful INSERT on this connection (0 if none).
+fn last_insert_rowid(c: Connection, context e: Engine) -> int errors sqlite::failure::Failure:
+    if not conn_live?(c):
+        fail sqlite::failure::Failure {info: stale("last_insert_rowid")}
+    c_last_rowid(c.slot):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("last_insert_rowid")}
+
+# How long (milliseconds) a statement waits for another connection's lock before failing with `busy`.
+# 0, the default, fails at once.
+fn set_busy_timeout(c: Connection, milliseconds: int, context e: Engine) -> unit errors sqlite::failure::Failure:
+    if not conn_live?(c):
+        fail sqlite::failure::Failure {info: stale("set_busy_timeout")}
+    if milliseconds < 0 or milliseconds > 2147483647:
+        fail sqlite::failure::Failure {info: misuse("busy timeout out of range", "set_busy_timeout")}
+    rc = c_busy_timeout(c.slot, milliseconds):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("set_busy_timeout")}
+    unit
+
+# Whether a transaction is open on the connection (SQLite's autocommit mode is off).
+fn in_transaction?(c: Connection, context e: Engine) -> bool errors sqlite::failure::Failure:
+    if not conn_live?(c):
+        fail sqlite::failure::Failure {info: stale("in_transaction?")}
+    mode = c_autocommit(c.slot):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("in_transaction?")}
+    mode == 0
+
+# --- public API: transactions -------------------------------------------------------------------------------
+
+# A transaction scope: bind it with `tx = db.begin()`. If the scope that owns it ends -- by reaching its end,
+# `return` or a `fail` -- without commit() or rollback() having consumed it, its cleanup rolls the
+# transaction back. It carries only the connection handle and the nesting level; the SQL work is done through
+# the connection (db.execute(...)), not through the Transaction.
+#
+# begin() on a connection with no open transaction issues BEGIN (level 0); begin() inside an open transaction
+# issues SAVEPOINT botlish_spN (level N), so scopes nest and each commits or rolls back independently.
+opaque resource struct Transaction:
+    conn: Connection
+    level: int
+
+fn savepoint_name(level: int) -> str:
+    "botlish_sp".concat(std::int::to_string(level))
+
+fn depth_of(ci: int, context e: Engine) -> int:
+    e.depth.at(ci):
+        on IndexNotFound:
+            0
+
+fn set_depth(ci: int, level: int, context e: Engine) -> unit:
+    old = e.depth.swap(ci, level):
+        on IndexNotFound:
+            0
+    unit
+
+# Runs one statement of SQL text on connection slot CI; returns SQLite's code.
+fn exec_code(ci: int, sql: str, context e: Engine) -> int:
+    c_exec(ci, cstr(sql)):
+        on IndexNotFound:
+            21
+
+# Undoes level LEVEL (ROLLBACK, or ROLLBACK TO + RELEASE for a savepoint) and records that it is closed.
+# Returns the first failing code, else 0.
+fn undo_level(ci: int, level: int, context e: Engine) -> int:
+    set_depth(ci, level)
+    if level == 0:
+        return exec_code(ci, "ROLLBACK")
+    to = exec_code(ci, "ROLLBACK TO ".concat(savepoint_name(level)))
+    released = exec_code(ci, "RELEASE ".concat(savepoint_name(level)))
+    if to != 0:
+        return to
+    released
+
+fn open_levels(ci: int, context e: Engine) -> int:
+    mode = c_autocommit(ci):
+        on IndexNotFound:
+            return 0
+    if mode == 1:
+        return 0
+    depth_of(ci)
+
+fn begin_sql(behavior: int) -> str:
+    if behavior == 1:
+        return "BEGIN IMMEDIATE"
+    if behavior == 2:
+        return "BEGIN EXCLUSIVE"
+    "BEGIN"
+
+fn begin_with(c: Connection, behavior: int, context e: Engine) -> Transaction errors sqlite::failure::Failure:
+    if not conn_live?(c):
+        fail sqlite::failure::Failure {info: stale("begin")}
+    ci = c.slot
+    mode = c_autocommit(ci):
+        on IndexNotFound:
+            fail sqlite::failure::Failure {info: stale("begin")}
+    open = depth_of(ci)
+    level = if mode == 1:
+        0
+    elif open >= 1:
+        open
+    else:
+        1
+    sql = if level == 0:
+        begin_sql(behavior)
+    else:
+        "SAVEPOINT ".concat(savepoint_name(level))
+    rc = exec_code(ci, sql)
+    if rc != 0:
+        fail sqlite::failure::Failure {info: db_info(ci, rc, "begin")}
+    set_depth(ci, level + 1)
+    Transaction {conn: c, level: level}
+
+# Starts a transaction scope (DEFERRED: SQLite takes locks when first needed). Inside an open transaction it
+# starts a savepoint instead.
+fn begin(c: Connection, context e: Engine) -> Transaction errors sqlite::failure::Failure:
+    begin_with(c, 0)
+
+# Like begin, but the outermost level takes the write lock at once (BEGIN IMMEDIATE), so a conflicting
+# writer fails here with `busy` rather than at its first write.
+fn begin_immediate(c: Connection, context e: Engine) -> Transaction errors sqlite::failure::Failure:
+    begin_with(c, 1)
+
+# Like begin, taking an exclusive lock (BEGIN EXCLUSIVE).
+fn begin_exclusive(c: Connection, context e: Engine) -> Transaction errors sqlite::failure::Failure:
+    begin_with(c, 2)
+
+fn commit_level(ci: int, level: int, context e: Engine) -> int:
+    if level == 0:
+        return exec_code(ci, "COMMIT")
+    exec_code(ci, "RELEASE ".concat(savepoint_name(level)))
+
+fn commit_inner(c: Connection, level: int, context e: Engine) -> unit errors sqlite::failure::Failure:
+    if not conn_live?(c):
+        fail sqlite::failure::Failure {info: stale("commit")}
+    ci = c.slot
+    rc = commit_level(ci, level)
+    if rc == 0:
+        set_depth(ci, level)
+        return unit
+    info = db_info(ci, rc, "commit")
+    undone = undo_level(ci, level)
+    fail sqlite::failure::Failure {info: info}
+
+# Commits the scope (COMMIT, or RELEASE for a savepoint) and ends it. If the commit fails the package rolls the
+# level back -- the connection is left with that level closed -- and reports the commit's Failure.
+fn commit(t: Transaction, context e: Engine) -> unit errors sqlite::failure::Failure:
+    {conn, level} = t
+    commit_inner(conn, level)
+
+fn rollback_inner(c: Connection, level: int, context e: Engine) -> unit errors sqlite::failure::Failure:
+    if not conn_live?(c):
+        fail sqlite::failure::Failure {info: stale("rollback")}
+    ci = c.slot
+    rc = undo_level(ci, level)
+    if rc != 0:
+        fail sqlite::failure::Failure {info: db_info(ci, rc, "rollback")}
+    unit
+
+# Rolls the scope back (ROLLBACK, or ROLLBACK TO + RELEASE for a savepoint) and ends it.
+fn rollback(t: Transaction, context e: Engine) -> unit errors sqlite::failure::Failure:
+    {conn, level} = t
+    rollback_inner(conn, level)
+
+# The cleanup of a scope that ended without commit() or rollback(): rolls its level back if it is still open.
+# It cannot fail; if the rollback itself fails the connection is left as SQLite leaves it (check in_transaction?).
+cleanup fn abandon(t: Transaction, context e: Engine):
+    {conn, level} = t
+    if conn_live?(conn):
+        ci = conn.slot
+        if open_levels(ci) > level:
+            code = undo_level(ci, level)

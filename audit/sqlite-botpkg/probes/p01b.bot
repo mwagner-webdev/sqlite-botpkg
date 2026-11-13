@@ -1,0 +1,7 @@
+import std::ffi::c
+import std::int
+
+extern c library "botsqlite3" static at "/tmp/opencode/nat/libbotsqlite3.a"
+extern c fn sqlite3_libversion_number() -> std::ffi::c::Int
+
+print(std::int::to_string(sqlite3_libversion_number()))

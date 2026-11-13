@@ -1,0 +1,10 @@
+import std::io
+import std::darwin::io
+
+fn hello() errors std::io::WriteFailed:
+    std::io::print_line("hi")
+
+with context std::darwin::io::create()
+hello():
+    on std::io::WriteFailed:
+        unit

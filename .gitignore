@@ -1,0 +1,8 @@
+/botlish
+/botlish-linux-x86_64
+.bot_modules/
+build/
+dist/
+*.o
+/audit/sqlite-botpkg/probes/p01b
+**/.bot_cache/

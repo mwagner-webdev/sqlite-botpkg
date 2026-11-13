@@ -1,0 +1,187 @@
+# sqlite::value -- SQLite's five storage classes as Botlish values, and result rows.
+#
+# Pure Botlish: no C, no context, runs on every backend.
+#
+# SQL NULL is `value::null()`, a Value of its own kind. It is never an empty string, an empty blob, a
+# zero or a missing row: `value::null() == value::text("")` is false, and so on for every pair.
+#
+#   NULL     value::null()
+#   INTEGER  value::integer(n)       n an Int64 (a signed 64-bit integer)
+#   REAL     value::real(x)          x a finite Float64
+#   TEXT     value::text(s)          s a String (SQLite stores its UTF-8 encoding, NUL bytes included)
+#   BLOB     value::blob(bytes)      bytes a std::abi::bytes::Bytes (an empty one is still a BLOB)
+#
+# A Value is an opaque struct: only the constructors below make one, so the inactive fields are always
+# canonical and `==` is SQLite-value equality (the same storage class and the same content).
+import std::abi::bytes
+import std::list
+import std::str
+
+type Int64 = Int in -9223372036854775808..9223372036854775807
+
+enum Kind:
+    Null,
+    Integer,
+    Real,
+    Text,
+    Blob
+
+# A typed accessor was used on a Value of another storage class (a NULL included).
+error WrongType:
+    expected: Kind
+    actual: Kind
+
+# A column index outside the row.
+error NoSuchColumn
+
+# A column name the row does not have.
+error NoSuchName
+
+# An Int outside -2^63 .. 2^63-1: SQLite's INTEGER cannot hold it.
+error IntegerOutOfRange
+
+opaque struct Value:
+    kind: Kind
+    integer: Int64
+    real: Float64
+    text: str
+    blob: std::abi::bytes::Bytes
+
+fn no_bytes() -> std::abi::bytes::Bytes:
+    std::abi::bytes::from_list([])
+
+fn null() -> Value:
+    Value {kind: Kind::Null, integer: 0, real: 0.0, text: "", blob: no_bytes()}
+
+fn integer(n: Int64) -> Value:
+    Value {kind: Kind::Integer, integer: n, real: 0.0, text: "", blob: no_bytes()}
+
+# The INTEGER of an arbitrary Int, or IntegerOutOfRange.
+fn integer_of(n: int) -> Value errors IntegerOutOfRange:
+    if n < -9223372036854775808 or n > 9223372036854775807:
+        fail IntegerOutOfRange
+    integer(n)
+
+fn real(x: Float64) -> Value:
+    Value {kind: Kind::Real, integer: 0, real: x, text: "", blob: no_bytes()}
+
+fn text(s: str) -> Value:
+    Value {kind: Kind::Text, integer: 0, real: 0.0, text: s, blob: no_bytes()}
+
+fn blob(b: std::abi::bytes::Bytes) -> Value:
+    Value {kind: Kind::Blob, integer: 0, real: 0.0, text: "", blob: b}
+
+fn kind(v: Value) -> Kind:
+    v.kind
+
+fn null?(v: Value) -> bool:
+    v.kind == Kind::Null
+
+fn kind_name(k: Kind) -> str:
+    if k == Kind::Null:
+        return "NULL"
+    if k == Kind::Integer:
+        return "INTEGER"
+    if k == Kind::Real:
+        return "REAL"
+    if k == Kind::Text:
+        return "TEXT"
+    "BLOB"
+
+fn as_integer(v: Value) -> Int64 errors WrongType:
+    if v.kind != Kind::Integer:
+        fail WrongType {expected: Kind::Integer, actual: v.kind}
+    v.integer
+
+fn as_real(v: Value) -> Float64 errors WrongType:
+    if v.kind != Kind::Real:
+        fail WrongType {expected: Kind::Real, actual: v.kind}
+    v.real
+
+fn as_text(v: Value) -> str errors WrongType:
+    if v.kind != Kind::Text:
+        fail WrongType {expected: Kind::Text, actual: v.kind}
+    v.text
+
+fn as_blob(v: Value) -> std::abi::bytes::Bytes errors WrongType:
+    if v.kind != Kind::Blob:
+        fail WrongType {expected: Kind::Blob, actual: v.kind}
+    v.blob
+
+# Total accessors: the Value's content if it has the storage class, else DEFAULT. A NULL (or any other
+# class) is therefore replaced by an explicit, caller-chosen default, never silently by zero or "".
+fn integer_or(v: Value, default: Int64) -> Int64:
+    if v.kind == Kind::Integer:
+        return v.integer
+    default
+
+fn real_or(v: Value, default: Float64) -> Float64:
+    if v.kind == Kind::Real:
+        return v.real
+    default
+
+fn text_or(v: Value, default: str) -> str:
+    if v.kind == Kind::Text:
+        return v.text
+    default
+
+fn blob_or(v: Value, default: std::abi::bytes::Bytes) -> std::abi::bytes::Bytes:
+    if v.kind == Kind::Blob:
+        return v.blob
+    default
+
+# --- rows ---------------------------------------------------------------------------------------------
+
+# One result row: the column names (shared by every row of a result) and the values, by position.
+opaque struct Row:
+    names: List[str]
+    values: List[Value]
+
+fn row(names: List[str], values: List[Value]) -> Row:
+    Row {names: names, values: values}
+
+fn width(r: Row) -> int:
+    r.values.length()
+
+fn names(r: Row) -> List[str]:
+    r.names
+
+fn values(r: Row) -> List[Value]:
+    r.values
+
+fn column(r: Row, index: int) -> Value errors NoSuchColumn:
+    r.values.at(index):
+        on IndexNotFound:
+            fail NoSuchColumn
+
+fn index_from(names: List[str], name: str, i: int) -> int errors NoSuchName:
+    if i < 0 or i >= names.length():
+        fail NoSuchName
+    if names.at(i) == name:
+        return i
+    names.index_from(name, i + 1)
+
+# The position of the first column called NAME (SQLite column names are not unique; the first wins).
+fn index_of(r: Row, name: str) -> int errors NoSuchName:
+    r.names.index_from(name, 0)
+
+fn named(r: Row, name: str) -> Value errors NoSuchName:
+    i = r.index_of(name)
+    r.values.at(i):
+        on IndexNotFound:
+            fail NoSuchName
+
+fn null_at?(r: Row, index: int) -> bool errors NoSuchColumn:
+    r.column(index).null?()
+
+fn integer_at(r: Row, index: int) -> Int64 errors NoSuchColumn, WrongType:
+    r.column(index).as_integer()
+
+fn real_at(r: Row, index: int) -> Float64 errors NoSuchColumn, WrongType:
+    r.column(index).as_real()
+
+fn text_at(r: Row, index: int) -> str errors NoSuchColumn, WrongType:
+    r.column(index).as_text()
+
+fn blob_at(r: Row, index: int) -> std::abi::bytes::Bytes errors NoSuchColumn, WrongType:
+    r.column(index).as_blob()

@@ -1,0 +1,128 @@
+# sqlite::failure -- the failure contract of the sqlite package.
+#
+# Every operational SQLite failure -- a constraint violation, a busy or locked database, malformed SQL, an
+# I/O error, a wrong use of the API -- is the one declared error `Failure`, whose one field `info` is an `Info`:
+#
+#   kind      a stable ErrorKind, derived from SQLite's *primary result code* (never from the message)
+#   code      SQLite's primary result code (SQLITE_CONSTRAINT = 19, ...)
+#   extended  SQLite's extended result code (SQLITE_CONSTRAINT_UNIQUE = 2067, ...), as sqlite3_extended_errcode reports it
+#   message   SQLite's human-readable text (sqlite3_errmsg), for people: programs must not parse it
+#   operation which package operation failed ("open", "prepare", "step", "commit", ...)
+#
+# A handler selects on the error's identity only (`on sqlite::failure::Failure f:`), then on `f.info.kind`.
+# Nothing in this package panics on a SQLite error.
+import std::int
+import std::str
+
+enum ErrorKind:
+    Constraint,
+    Busy,
+    Locked,
+    SqlError,
+    Io,
+    CantOpen,
+    ReadOnly,
+    Corrupt,
+    Full,
+    Misuse,
+    Interrupted,
+    Resource,
+    Encoding,
+    Other
+
+struct Info:
+    kind: ErrorKind
+    code: int
+    extended: int
+    message: str
+    operation: str
+
+error Failure:
+    info: Info
+
+fn info(kind: ErrorKind, code: int, extended: int, message: str, operation: str) -> Info:
+    Info {kind: kind, code: code, extended: extended, message: message, operation: operation}
+
+# SQLITE_* primary result codes (sqlite3.h).
+fn code_error() -> int:
+    1
+
+fn code_busy() -> int:
+    5
+
+fn code_locked() -> int:
+    6
+
+fn code_constraint() -> int:
+    19
+
+fn code_misuse() -> int:
+    21
+
+fn code_row() -> int:
+    100
+
+fn code_done() -> int:
+    101
+
+# The kind of a result code. The extended code's low byte is the primary code, so either may be passed.
+fn classify(code: int) -> ErrorKind:
+    primary = code.mod(256)
+    if primary == 19:
+        return ErrorKind::Constraint
+    if primary == 5:
+        return ErrorKind::Busy
+    if primary == 6:
+        return ErrorKind::Locked
+    if primary == 1 or primary == 17 or primary == 20:
+        return ErrorKind::SqlError
+    if primary == 10:
+        return ErrorKind::Io
+    if primary == 14:
+        return ErrorKind::CantOpen
+    if primary == 8:
+        return ErrorKind::ReadOnly
+    if primary == 11 or primary == 26:
+        return ErrorKind::Corrupt
+    if primary == 13:
+        return ErrorKind::Full
+    if primary == 21 or primary == 23 or primary == 12 or primary == 25:
+        return ErrorKind::Misuse
+    if primary == 9 or primary == 4:
+        return ErrorKind::Interrupted
+    if primary == 7 or primary == 18 or primary == 3:
+        return ErrorKind::Resource
+    ErrorKind::Other
+
+fn kind_name(k: ErrorKind) -> str:
+    if k == ErrorKind::Constraint:
+        return "constraint"
+    if k == ErrorKind::Busy:
+        return "busy"
+    if k == ErrorKind::Locked:
+        return "locked"
+    if k == ErrorKind::SqlError:
+        return "sql-error"
+    if k == ErrorKind::Io:
+        return "io"
+    if k == ErrorKind::CantOpen:
+        return "cant-open"
+    if k == ErrorKind::ReadOnly:
+        return "read-only"
+    if k == ErrorKind::Corrupt:
+        return "corrupt"
+    if k == ErrorKind::Full:
+        return "full"
+    if k == ErrorKind::Misuse:
+        return "misuse"
+    if k == ErrorKind::Interrupted:
+        return "interrupted"
+    if k == ErrorKind::Resource:
+        return "resource"
+    if k == ErrorKind::Encoding:
+        return "encoding"
+    "other"
+
+# A one-line description for logs: "constraint (19, 2067) in step: UNIQUE constraint failed: t.id".
+fn describe(i: Info) -> str:
+    kind_name(i.kind).concat(" (").concat(std::int::to_string(i.code)).concat(", ").concat(std::int::to_string(i.extended)).concat(") in ").concat(i.operation).concat(": ").concat(i.message)
