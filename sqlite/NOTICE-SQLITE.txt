@@ -1,0 +1,13 @@
+SQLite is in the public domain.
+
+The native library bundled in this package (targets/*/native/libbotsqlite3.a) is the unmodified SQLite 3.54.1
+amalgamation (sqlite3.c), compiled from the source release
+  https://www.sqlite.org/2026/sqlite-amalgamation-3540100.zip
+  SHA3-256 92281c86e2957f9b9305890f9ac04204caa7b677cc868dc326d942689df28e30 (as published on https://www.sqlite.org/download.html)
+with the compile-time options listed in native/FLAGS.md of the package's source repository.
+
+The author disclaims copyright to this source code. In place of a legal notice, here is a blessing:
+
+   May you do good and not evil.
+   May you find forgiveness for yourself and forgive others.
+   May you share freely, never taking more than you give.

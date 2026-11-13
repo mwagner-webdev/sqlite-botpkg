@@ -1,0 +1,100 @@
+# harness -- a tiny check runner for the acceptance programs.
+#
+# Every check prints "PASS name" or "FAIL name: detail" at once. finish() prints
+# "RESULT passed=N failed=M" and ends the process with status 1 if anything failed, so a crash, a failed check and a
+# missing RESULT line are all visible to the runner script.
+import posix
+import sqlite::value
+import std::abi::bytes
+import std::int
+import std::list
+import std::mutable_vector
+import std::str
+
+opaque context struct Tally:
+    passed: MutableVector[str]
+    failed: MutableVector[str]
+
+fn no_names() -> MutableVector[str]:
+    std::mutable_vector::from_list([])
+
+fn tally() -> Tally:
+    Tally {passed: no_names(), failed: no_names()}
+
+nomethod fn check(name: str, ok: bool, context t: Tally) -> unit:
+    if ok:
+        t.passed.push(name)
+        return posix::say("PASS ".concat(name))
+    t.failed.push(name)
+    posix::say("FAIL ".concat(name))
+
+nomethod fn expect_true(name: str, ok: bool, detail: str, context t: Tally) -> unit:
+    if ok:
+        t.passed.push(name)
+        return posix::say("PASS ".concat(name))
+    t.failed.push(name)
+    posix::say("FAIL ".concat(name).concat(": ").concat(detail))
+
+nomethod fn expect_int(name: str, actual: int, expected: int, context t: Tally) -> unit:
+    expect_true(name, actual == expected, "expected ".concat(std::int::to_string(expected)).concat(", got ").concat(std::int::to_string(actual)))
+
+nomethod fn expect_str(name: str, actual: str, expected: str, context t: Tally) -> unit:
+    expect_true(name, actual == expected, "expected \"".concat(expected).concat("\" but got \"").concat(actual).concat("\" (end of values)"))
+
+# A test body ended in a Failure (or other unexpected error) it did not mean to raise.
+nomethod fn unexpected(name: str, what: str, context t: Tally) -> unit:
+    t.failed.push(name)
+    posix::say("FAIL ".concat(name).concat(": unexpected ").concat(what))
+
+nomethod fn finish(context t: Tally) -> unit:
+    p = t.passed.length()
+    f = t.failed.length()
+    posix::say("RESULT passed=".concat(std::int::to_string(p)).concat(" failed=").concat(std::int::to_string(f)))
+    if f > 0:
+        return posix::die(1)
+    unit
+
+# --- reading results without ceremony: a missing row/column or a value of another class reads as a sentinel, so a
+# --- check that expects the real value fails visibly instead of the test body declaring four errors.
+
+fn missing() -> sqlite::value::Int64:
+    -999999999
+
+nomethod fn row_at(rows: List[sqlite::value::Row], r: int) -> sqlite::value::Row:
+    rows.at(r):
+        on IndexNotFound:
+            sqlite::value::row([], [])
+
+nomethod fn int_cell(rows: List[sqlite::value::Row], r: int, c: int) -> int:
+    row_at(rows, r).integer_at(c):
+        on sqlite::value::ColumnError:
+            missing()
+
+nomethod fn text_cell(rows: List[sqlite::value::Row], r: int, c: int) -> str:
+    row_at(rows, r).text_at(c):
+        on sqlite::value::ColumnError:
+            "<missing>"
+
+nomethod fn null_cell?(rows: List[sqlite::value::Row], r: int, c: int) -> bool:
+    row_at(rows, r).null_at?(c):
+        on sqlite::value::ColumnError:
+            false
+
+nomethod fn blob_cell(rows: List[sqlite::value::Row], r: int, c: int) -> std::abi::bytes::Bytes:
+    row_at(rows, r).blob_at(c):
+        on sqlite::value::ColumnError:
+            std::abi::bytes::from_list([])
+
+nomethod fn real_cell(rows: List[sqlite::value::Row], r: int, c: int) -> Float64:
+    row_at(rows, r).real_at(c):
+        on sqlite::value::ColumnError:
+            -1.0
+
+nomethod fn kind_cell(rows: List[sqlite::value::Row], r: int, c: int) -> sqlite::value::Kind:
+    v = row_at(rows, r).column(c):
+        on sqlite::value::ColumnError:
+            sqlite::value::null()
+    v.kind()
+
+nomethod fn kind_name_of(rows: List[sqlite::value::Row], r: int, c: int) -> str:
+    sqlite::value::kind_name(kind_cell(rows, r, c))

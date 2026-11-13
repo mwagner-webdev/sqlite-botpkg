@@ -1,0 +1,107 @@
+# ac_basic -- in-memory database, schema, parameterised INSERT, SELECT, several rows, statement reuse.
+# An independent consumer of the installed `sqlite` package.
+import harness
+import sqlite
+import sqlite::failure
+import sqlite::value
+import std::list
+import std::str
+
+fn t_memory() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    harness::check("memory: connection is open", db.open?())
+    rows = db.query("select 1 + 41", [])
+    harness::expect_int("memory: executes SQL", harness::int_cell(rows, 0, 0), 42)
+    db.close()
+    harness::check("memory: handle invalid after close", not db.open?())
+
+fn t_schema() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    db.execute("create table tasks(id integer primary key, title text not null, done integer not null default 0)", [])
+    tables = db.query("select name from sqlite_master where type = 'table'", [])
+    harness::expect_int("schema: one table created", tables.length(), 1)
+    harness::expect_str("schema: its name", harness::text_cell(tables, 0, 0), "tasks")
+    cols = db.query("select name from pragma_table_info('tasks') order by cid", [])
+    harness::expect_int("schema: three columns", cols.length(), 3)
+    db.close()
+
+fn t_insert_select() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    db.execute("create table tasks(id integer primary key, title text not null, done integer not null default 0)", [])
+    changed = db.execute("insert into tasks(title, done) values (?, ?)", [sqlite::value::text("write tests"), sqlite::value::integer(0)])
+    harness::expect_int("insert: one row changed", changed, 1)
+    harness::expect_int("insert: rowid reported", db.last_insert_rowid(), 1)
+    rows = db.query("select id, title, done from tasks where id = ?", [sqlite::value::integer(1)])
+    harness::expect_int("select: id", harness::int_cell(rows, 0, 0), 1)
+    harness::expect_str("select: title", harness::text_cell(rows, 0, 1), "write tests")
+    harness::expect_int("select: done", harness::int_cell(rows, 0, 2), 0)
+    row = harness::row_at(rows, 0)
+    harness::expect_int("select: width", row.width(), 3)
+    names = sqlite::value::names(row)
+    harness::expect_str("select: column name", names.get(1, "none"), "title")
+    byname = row.named("done"):
+        on sqlite::value::ColumnError:
+            sqlite::value::null()
+    harness::expect_int("select: by name", byname.integer_or(-1), 0)
+    db.close()
+
+fn t_many_rows() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    db.execute("create table n(i integer primary key, sq integer)", [])
+    ins = db.prepare("insert into n(i, sq) values (?, ?)")
+    loop i from 1 to 101:
+        ins.run([sqlite::value::integer(i), sqlite::value::integer(i * i)])
+    ins.finalize()
+    rows = db.query("select i, sq from n order by i", [])
+    harness::expect_int("rows: count", rows.length(), 100)
+    harness::expect_int("rows: first", harness::int_cell(rows, 0, 0), 1)
+    harness::expect_int("rows: last square", harness::int_cell(rows, 99, 1), 10000)
+    sums = db.query("select sum(sq) from n", [])
+    harness::expect_int("rows: aggregate", harness::int_cell(sums, 0, 0), 338350)
+    ordered = db.query("select i from n where i > ? order by i desc limit 3", [sqlite::value::integer(97)])
+    harness::expect_int("rows: bound filter", ordered.length(), 3)
+    harness::expect_int("rows: descending", harness::int_cell(ordered, 0, 0), 100)
+    db.close()
+
+fn t_reuse() -> unit errors sqlite::failure::Failure:
+    db = sqlite::open_memory()
+    db.execute("create table kv(k text primary key, v text)", [])
+    put = db.prepare("insert into kv(k, v) values (?, ?)")
+    put.run([sqlite::value::text("ka"), sqlite::value::text("v1")])
+    put.run([sqlite::value::text("kb"), sqlite::value::text("v2")])
+    put.run([sqlite::value::text("kc"), sqlite::value::text("v3")])
+    get = db.prepare("select v from kv where k = ?")
+    first = get.rows([sqlite::value::text("kb")])
+    second = get.rows([sqlite::value::text("kc")])
+    missing = get.rows([sqlite::value::text("zzz")])
+    harness::expect_str("reuse: first run", harness::text_cell(first, 0, 0), "v2")
+    harness::expect_str("reuse: second run", harness::text_cell(second, 0, 0), "v3")
+    harness::expect_int("reuse: no match is no rows", missing.length(), 0)
+    harness::expect_int("reuse: two statements live", sqlite::open_statements(), 2)
+    put.finalize()
+    get.finalize()
+    harness::expect_int("reuse: finalized", sqlite::open_statements(), 0)
+    db.close()
+
+fn run_all() -> unit:
+    t_memory():
+        on sqlite::failure::Failure f:
+            harness::unexpected("memory", sqlite::failure::describe(f.info))
+    t_schema():
+        on sqlite::failure::Failure f:
+            harness::unexpected("schema", sqlite::failure::describe(f.info))
+    t_insert_select():
+        on sqlite::failure::Failure f:
+            harness::unexpected("insert_select", sqlite::failure::describe(f.info))
+    t_many_rows():
+        on sqlite::failure::Failure f:
+            harness::unexpected("many_rows", sqlite::failure::describe(f.info))
+    t_reuse():
+        on sqlite::failure::Failure f:
+            harness::unexpected("reuse", sqlite::failure::describe(f.info))
+    harness::expect_int("no connection leaked", sqlite::open_connections(), 0)
+    harness::finish()
+
+with context harness::tally()
+with context sqlite::engine()
+run_all()

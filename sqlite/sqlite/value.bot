@@ -26,16 +26,21 @@ enum Kind:
     Text,
     Blob
 
-# A typed accessor was used on a Value of another storage class (a NULL included).
-error WrongType:
+enum ColumnProblem:
+    WrongType,
+    NoSuchColumn,
+    NoSuchName
+
+# Why a column read failed:
+#   WrongType     a typed accessor met a Value of another storage class (a NULL included); `expected` and
+#                 `actual` say which
+#   NoSuchColumn  an index outside the row (expected and actual are Null placeholders)
+#   NoSuchName    a column name the row does not have (same placeholders)
+# One error for every read of a row or Value, so row-decoding code declares a single `errors` entry.
+error ColumnError:
+    problem: ColumnProblem
     expected: Kind
     actual: Kind
-
-# A column index outside the row.
-error NoSuchColumn
-
-# A column name the row does not have.
-error NoSuchName
 
 # An Int outside -2^63 .. 2^63-1: SQLite's INTEGER cannot hold it.
 error IntegerOutOfRange
@@ -88,24 +93,24 @@ nomethod fn kind_name(k: Kind) -> str:
         return "TEXT"
     "BLOB"
 
-fn as_integer(v: Value) -> Int64 errors WrongType:
+fn as_integer(v: Value) -> Int64 errors ColumnError:
     if v.kind != Kind::Integer:
-        fail WrongType {expected: Kind::Integer, actual: v.kind}
+        fail ColumnError {problem: ColumnProblem::WrongType, expected: Kind::Integer, actual: v.kind}
     v.integer
 
-fn as_real(v: Value) -> Float64 errors WrongType:
+fn as_real(v: Value) -> Float64 errors ColumnError:
     if v.kind != Kind::Real:
-        fail WrongType {expected: Kind::Real, actual: v.kind}
+        fail ColumnError {problem: ColumnProblem::WrongType, expected: Kind::Real, actual: v.kind}
     v.real
 
-fn as_text(v: Value) -> str errors WrongType:
+fn as_text(v: Value) -> str errors ColumnError:
     if v.kind != Kind::Text:
-        fail WrongType {expected: Kind::Text, actual: v.kind}
+        fail ColumnError {problem: ColumnProblem::WrongType, expected: Kind::Text, actual: v.kind}
     v.text
 
-fn as_blob(v: Value) -> std::abi::bytes::Bytes errors WrongType:
+fn as_blob(v: Value) -> std::abi::bytes::Bytes errors ColumnError:
     if v.kind != Kind::Blob:
-        fail WrongType {expected: Kind::Blob, actual: v.kind}
+        fail ColumnError {problem: ColumnProblem::WrongType, expected: Kind::Blob, actual: v.kind}
     v.blob
 
 # Total accessors: the Value's content if it has the storage class, else DEFAULT. A NULL (or any other
@@ -149,39 +154,39 @@ fn names(r: Row) -> List[str]:
 fn values(r: Row) -> List[Value]:
     r.values
 
-fn column(r: Row, index: int) -> Value errors NoSuchColumn:
+fn column(r: Row, index: int) -> Value errors ColumnError:
     r.values.at(index):
         on IndexNotFound:
-            fail NoSuchColumn
+            fail ColumnError {problem: ColumnProblem::NoSuchColumn, expected: Kind::Null, actual: Kind::Null}
 
-private fn index_from(names: List[str], name: str, i: int) -> int errors NoSuchName:
+private fn index_from(names: List[str], name: str, i: int) -> int errors ColumnError:
     if i < 0 or i >= names.length():
-        fail NoSuchName
+        fail ColumnError {problem: ColumnProblem::NoSuchName, expected: Kind::Null, actual: Kind::Null}
     if names.at(i) == name:
         return i
     names.index_from(name, i + 1)
 
 # The position of the first column called NAME (SQLite column names are not unique; the first wins).
-fn index_of(r: Row, name: str) -> int errors NoSuchName:
+fn index_of(r: Row, name: str) -> int errors ColumnError:
     r.names.index_from(name, 0)
 
-fn named(r: Row, name: str) -> Value errors NoSuchName:
+fn named(r: Row, name: str) -> Value errors ColumnError:
     i = r.index_of(name)
     r.values.at(i):
         on IndexNotFound:
-            fail NoSuchName
+            fail ColumnError {problem: ColumnProblem::NoSuchName, expected: Kind::Null, actual: Kind::Null}
 
-fn null_at?(r: Row, index: int) -> bool errors NoSuchColumn:
+fn null_at?(r: Row, index: int) -> bool errors ColumnError:
     r.column(index).null?()
 
-fn integer_at(r: Row, index: int) -> Int64 errors NoSuchColumn, WrongType:
+fn integer_at(r: Row, index: int) -> Int64 errors ColumnError:
     r.column(index).as_integer()
 
-fn real_at(r: Row, index: int) -> Float64 errors NoSuchColumn, WrongType:
+fn real_at(r: Row, index: int) -> Float64 errors ColumnError:
     r.column(index).as_real()
 
-fn text_at(r: Row, index: int) -> str errors NoSuchColumn, WrongType:
+fn text_at(r: Row, index: int) -> str errors ColumnError:
     r.column(index).as_text()
 
-fn blob_at(r: Row, index: int) -> std::abi::bytes::Bytes errors NoSuchColumn, WrongType:
+fn blob_at(r: Row, index: int) -> std::abi::bytes::Bytes errors ColumnError:
     r.column(index).as_blob()
