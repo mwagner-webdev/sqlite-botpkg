@@ -26,11 +26,11 @@ Compiler under census: `botlish` single-file build, source revision `cdb751b`, S
   (`concept.native-link-plan`) **[inspection]**.
 * ✔ A package may *bundle* a library per target: `botlish native add FILE -target T -name N` copies it to `targets/T/native/` and records its loader facts;
   the installed view `.bot_modules/.targets/T` carries a `.lib` the compiler links **without `-L`** **[executed]** (`audit/…/logs/` acceptance log shows `native plan`).
-* ✔ `native require NAME -target T -origin system` declares a system library (`libm`) **[executed]**.
+* ✔ `native require NAME -target T -origin system` declares a system library **[executed on Linux]**. ✖ On **macOS** `botlish add` refuses any package that declares one: `PM NATIVE: verifying a system library on macos is not implemented` **[CI]** (F-25). → the package declares none: SQLite is built without its optional SQL math functions, so the archive needs only libc/pthread (`nm -u`).
 * ✔ The same `extern c library "botsqlite3"` declaration serves Linux and macOS; **no OS conditional in any `.bot` file** **[executed]**.
   Only the per-target archive file differs, and that is package metadata.
 * ✔ The compiler accepts **a static archive of one object built by the host `cc`** (`ar rcs`) **[executed]**: SQLite's amalgamation compiled with `-O2 -fPIC`
-  links into a PIE executable; `ldd` shows only libm/libgcc/libc.
+  links into a PIE executable; `ldd` shows only libm/libgcc/libc (libm is pulled in by Botlish's own runtime, not by the package).
 * ✖ `native add -symbol` cannot verify a Mach-O archive built by Apple `ar`: its `__.SYMDEF SORTED` index reads as "0 names" **[CI]** F-16. → The package leaves `-symbol`
   checks to Linux and lets the macOS link be the check.
 * ✖ The macOS compiler distribution is not a release asset; it is built from source in CI (`single/macos/build.sh`, ~17 min) **[CI]**. macOS native = **arm64 only, AOT only (no JIT)** **[CI]**

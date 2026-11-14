@@ -125,6 +125,7 @@ jobs:
         run: BOT=$PWD/botlish scripts/run_acceptance.sh dist/sqlite-0.1.0.botpkg 2>&1 | tee acceptance-linux.log
       - name: Memory check of the C boundary (valgrind memcheck over the acceptance executables)
         run: |
+          sudo apt-get update >/dev/null
           sudo apt-get install -y valgrind >/dev/null
           scripts/valgrind.sh "$PWD/build/consumer-run" "$PWD/build/valgrind" 2>&1 | tee valgrind-linux.log
       - name: Benchmark (Botlish package, and the same workload through the C API)

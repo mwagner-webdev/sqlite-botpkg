@@ -30,6 +30,7 @@ None of these needed a change to the compiler or runtime; every workaround is a 
 | F-14, F-15, F-20, F-21, F-23 | lint / syntax awkwardness (below) | lints, syntax | ergonomic | minor | partly |
 | F-24 | `Float64` has no ±Infinity: a stored `REAL` ±Inf is unreadable as a number | numbers | semantic | minor | — |
 | F-18 | macOS native backend: arm64 only, AOT only | backend | tooling | minor | — |
+| F-25 | `botlish add` refuses any package declaring a *system* native library on macOS | package manager | tooling | **major for portability** (found by the first macOS run) | needs a package + macOS |
 | F-22 | context-owned native state is never released at exit | resources | semantic | minor | — |
 
 Nothing here is a hard blocker: every item had a legitimate library-level answer. F-04 is the one that most changed the library's shape.
@@ -96,6 +97,15 @@ Nothing here is a hard blocker: every item had a legitimate library-level answer
 ## F-17 / F-18 — macOS compiler distribution  *(minor, tooling)*
 
 * No macOS asset exists on the Botlish releases (`gh release list`); the CI builds `Botlish.app` from the pinned commit (`single/macos/build.sh`, Tcl 9.0.1 + Rust, ~17 min on `macos-15`). The macOS distribution has **no JIT** and macOS native is **arm64 only**, so macOS tests are native executables only — which the milestone requires anyway.
+
+## F-25 — a package that declares a system library cannot be installed on macOS  *(tooling; found by the first macOS CI run)*
+
+* **Intended operation.** declare `libm` as a system library for both targets (`native require m -target T -origin system`) because SQLite's math functions need it, and install the package on macOS.
+* **Observed** **[CI]** (run 43497669917, `macos-15` arm64, `logs/ci-run-43497669917-macos-FAILED-install-system-libm.raw.log`): `botlish add sqlite-0.1.0.botpkg` →
+  `error: the native dependencies of the packages for macos-aarch64: system library m: verifying a system library on macos is not implemented (the plan reports it unverified) (declared by instance sqlite) (PM NATIVE)`. The same package packs and installs on Linux, and `package pack` on Linux accepts the macOS entry as "partially verified" — so the problem only appears at *install* time on the consumer's Mac.
+* **Class.** tooling. **Genuine?** Yes (a documented-by-message gap; "reports it unverified" is how `native plan` is meant to treat it, but `add` treats it as fatal).
+* **Workaround (design change).** Build SQLite without `SQLITE_ENABLE_MATH_FUNCTIONS`; `nm -u` then shows no libm symbol, so no system library is declared at all. The SQL math functions are a documented non-feature (`native/FLAGS.md`).
+* **Follow-up.** Make an *unverifiable* system library a warning at install time (the plan already "reports it unverified"), or implement the macOS check (libSystem's `.tbd`). Justified: every macOS package with a system library (`libz`, `libm`, `libsqlite3`) is uninstallable until then, and the failure shows up only on the consumer's machine.
 
 ## F-10 — error payloads have no nameable type  *(minor)*
 

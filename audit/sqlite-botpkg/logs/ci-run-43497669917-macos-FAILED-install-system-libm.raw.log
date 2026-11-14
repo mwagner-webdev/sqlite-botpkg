@@ -1,0 +1,649 @@
+﻿2026-11-13T20:48:20.2512030Z Current runner version: '2.338.2'
+2026-11-13T20:48:20.2531010Z ##[group]Runner Image Provisioner
+2026-11-13T20:48:20.2531600Z Hosted Compute Agent
+2026-11-13T20:48:20.2532040Z Version: 20261103.629
+2026-11-13T20:48:20.2532470Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+2026-11-13T20:48:20.2533030Z Build Date: 2026-11-03T17:26:59Z
+2026-11-13T20:48:20.2533580Z Worker ID: {0a06df95-3bc2-48ed-867a-65dba3123954}
+2026-11-13T20:48:20.2534070Z Region: westus
+2026-11-13T20:48:20.2534440Z Cloud: MacCloud
+2026-11-13T20:48:20.2534810Z ##[endgroup]
+2026-11-13T20:48:20.2536210Z ##[group]Operating System
+2026-11-13T20:48:20.2536620Z macOS
+2026-11-13T20:48:20.2536970Z 15.8.2
+2026-11-13T20:48:20.2537320Z 24H232
+2026-11-13T20:48:20.2537740Z ##[endgroup]
+2026-11-13T20:48:20.2538090Z ##[group]Runner Image
+2026-11-13T20:48:20.2538480Z Image: macos-15-arm64
+2026-11-13T20:48:20.2538900Z Version: 20261104.0514.1
+2026-11-13T20:48:20.2539830Z Included Software: https://github.com/actions/runner-images/blob/macos-15-arm64/20261104.0514/images/macos/macos-15-arm64-Readme.md
+2026-11-13T20:48:20.2540990Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-15-arm64%2F20261104.0514
+2026-11-13T20:48:20.2541760Z ##[endgroup]
+2026-11-13T20:48:20.2542580Z ##[group]GITHUB_TOKEN Permissions
+2026-11-13T20:48:20.2544000Z Actions: read
+2026-11-13T20:48:20.2544390Z Contents: read
+2026-11-13T20:48:20.2544760Z Metadata: read
+2026-11-13T20:48:20.2545210Z ##[endgroup]
+2026-11-13T20:48:20.2547120Z Secret source: Actions
+2026-11-13T20:48:20.2547740Z Cache mode: write
+2026-11-13T20:48:20.2548330Z Prepare workflow directory
+2026-11-13T20:48:20.2909110Z Prepare all required actions
+2026-11-13T20:48:20.2953640Z Getting action download info
+2026-11-13T20:48:20.4377140Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-13T20:48:20.6637920Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
+2026-11-13T20:48:20.7701540Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-11-13T20:48:21.0122820Z Complete job name: acceptance suite (macOS arm64, native AOT)
+2026-11-13T20:48:21.0917130Z ##[group]Run actions/checkout@v4
+2026-11-13T20:48:21.0918200Z with:
+2026-11-13T20:48:21.0918620Z   repository: mwagner-webdev/sqlite-botpkg
+2026-11-13T20:48:21.0921910Z   token: ***
+2026-11-13T20:48:21.0922300Z   ssh-strict: true
+2026-11-13T20:48:21.0922680Z   ssh-user: git
+2026-11-13T20:48:21.0923050Z   persist-credentials: true
+2026-11-13T20:48:21.0923480Z   clean: true
+2026-11-13T20:48:21.0923880Z   sparse-checkout-cone-mode: true
+2026-11-13T20:48:21.0924810Z   fetch-depth: 1
+2026-11-13T20:48:21.0925210Z   fetch-tags: false
+2026-11-13T20:48:21.0925580Z   show-progress: true
+2026-11-13T20:48:21.0925900Z   lfs: false
+2026-11-13T20:48:21.0926240Z   submodules: false
+2026-11-13T20:48:21.0926660Z   set-safe-directory: true
+2026-11-13T20:48:21.0927090Z   allow-unsafe-pr-checkout: false
+2026-11-13T20:48:21.0927790Z env:
+2026-11-13T20:48:21.0928190Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:48:21.0929030Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:48:21.0930070Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:48:21.0930650Z ##[endgroup]
+2026-11-13T20:48:21.5044170Z Syncing repository: mwagner-webdev/sqlite-botpkg
+2026-11-13T20:48:21.5045760Z ##[group]Getting Git version info
+2026-11-13T20:48:21.5046410Z Working directory is '/Users/runner/work/sqlite-botpkg/sqlite-botpkg'
+2026-11-13T20:48:21.5048210Z [command]/opt/homebrew/bin/git version
+2026-11-13T20:48:21.5314070Z git version 2.56.0
+2026-11-13T20:48:21.5332700Z ##[endgroup]
+2026-11-13T20:48:21.5344150Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/85f47e01-75a4-45fb-b1fa-9ca73b32c5ad/.gitconfig'
+2026-11-13T20:48:21.5348030Z Temporarily overriding HOME='/Users/runner/work/_temp/85f47e01-75a4-45fb-b1fa-9ca73b32c5ad' before making global git config changes
+2026-11-13T20:48:21.5349710Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-13T20:48:21.5352930Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/sqlite-botpkg/sqlite-botpkg
+2026-11-13T20:48:21.5456750Z Deleting the contents of '/Users/runner/work/sqlite-botpkg/sqlite-botpkg'
+2026-11-13T20:48:21.5459510Z ##[group]Initializing the repository
+2026-11-13T20:48:21.5464200Z [command]/opt/homebrew/bin/git init /Users/runner/work/sqlite-botpkg/sqlite-botpkg
+2026-11-13T20:48:21.5758770Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-13T20:48:21.5760160Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-13T20:48:21.5761070Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-13T20:48:21.5761690Z hint: call:
+2026-11-13T20:48:21.5762090Z hint:
+2026-11-13T20:48:21.5763050Z hint: 	git config --global init.defaultBranch <name>
+2026-11-13T20:48:21.5764020Z hint:
+2026-11-13T20:48:21.5764650Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-13T20:48:21.5765790Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-13T20:48:21.5766620Z hint:
+2026-11-13T20:48:21.5767080Z hint: 	git branch -m <name>
+2026-11-13T20:48:21.5767660Z hint:
+2026-11-13T20:48:21.5768210Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-13T20:48:21.5769220Z Initialized empty Git repository in /Users/runner/work/sqlite-botpkg/sqlite-botpkg/.git/
+2026-11-13T20:48:21.5772030Z [command]/opt/homebrew/bin/git remote add origin https://github.com/mwagner-webdev/sqlite-botpkg
+2026-11-13T20:48:21.5877040Z ##[endgroup]
+2026-11-13T20:48:21.5883620Z ##[group]Disabling automatic garbage collection
+2026-11-13T20:48:21.5889900Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2026-11-13T20:48:21.5976380Z ##[endgroup]
+2026-11-13T20:48:21.5977150Z ##[group]Setting up auth
+2026-11-13T20:48:21.5981890Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-13T20:48:21.6072510Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-13T20:48:21.7580150Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-13T20:48:21.7646680Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-13T20:48:21.8569090Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-13T20:48:21.8640120Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-13T20:48:21.9457110Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-13T20:48:21.9531550Z ##[endgroup]
+2026-11-13T20:48:21.9532440Z ##[group]Fetching the repository
+2026-11-13T20:48:21.9535820Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +f8dba13f2f5d03f0bd546afcc3e3bd7dc1df46dd:refs/remotes/origin/main
+2026-11-13T20:48:22.8965390Z From https://github.com/mwagner-webdev/sqlite-botpkg
+2026-11-13T20:48:22.8968070Z  * [new ref]         f8dba13f2f5d03f0bd546afcc3e3bd7dc1df46dd -> origin/main
+2026-11-13T20:48:22.8970040Z ##[endgroup]
+2026-11-13T20:48:22.8971050Z ##[group]Determining the checkout info
+2026-11-13T20:48:22.8972000Z ##[endgroup]
+2026-11-13T20:48:22.8974030Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2026-11-13T20:48:22.9057740Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-13T20:48:22.9128940Z ##[group]Checking out the ref
+2026-11-13T20:48:22.9130350Z [command]/opt/homebrew/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-11-13T20:48:22.9473160Z Switched to a new branch 'main'
+2026-11-13T20:48:22.9481090Z branch 'main' set up to track 'origin/main'.
+2026-11-13T20:48:22.9485020Z ##[endgroup]
+2026-11-13T20:48:22.9587850Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2026-11-13T20:48:22.9671050Z f8dba13f2f5d03f0bd546afcc3e3bd7dc1df46dd
+2026-11-13T20:48:22.9911400Z ##[group]Run sw_vers; uname -a
+2026-11-13T20:48:22.9912200Z [36;1msw_vers; uname -a[0m
+2026-11-13T20:48:22.9913300Z [36;1mecho "arch: $(uname -m); translated: $(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0)"[0m
+2026-11-13T20:48:22.9915350Z [36;1mecho "CPUs: $(sysctl -n hw.ncpu), memory: $(sysctl -n hw.memsize), Xcode: $(xcode-select -p), SDK $(xcrun --show-sdk-version)"[0m
+2026-11-13T20:48:22.9916790Z [36;1mcc --version | head -2[0m
+2026-11-13T20:48:22.9918100Z [36;1m[[ $(uname -s) == Darwin && $(uname -m) == arm64 ]] || { echo "::error::not a native arm64 macOS runner"; exit 1; }[0m
+2026-11-13T20:48:22.9920460Z [36;1m[[ $(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0) != 1 ]] || { echo "::error::running under Rosetta"; exit 1; }[0m
+2026-11-13T20:48:22.9973150Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:48:22.9974140Z env:
+2026-11-13T20:48:22.9974790Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:48:22.9976540Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:48:22.9978500Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:48:22.9979880Z ##[endgroup]
+2026-11-13T20:48:23.0663010Z ProductName:		macOS
+2026-11-13T20:48:23.0664800Z ProductVersion:		15.8.2
+2026-11-13T20:48:23.0667030Z BuildVersion:		24H232
+2026-11-13T20:48:23.0705720Z Darwin iad20-eo1212-1ead98d9-7841-4dd4-a852-6b6c9e34efe2-0A239A7BEAFD.local 24.6.0 Darwin Kernel Version 24.6.0: Sun Oct 11 23:44:11 PDT 2026; root:xnu-11417.140.69.713.47~2/RELEASE_ARM64_VMAPPLE arm64
+2026-11-13T20:48:23.1025790Z arch: arm64; translated: 0
+2026-11-13T20:48:24.5016220Z CPUs: 3, memory: 7516192768, Xcode: /Applications/Xcode_16.4.app/Contents/Developer, SDK 15.5
+2026-11-13T20:48:25.1582370Z Apple clang version 17.0.0 (clang-1700.0.13.5)
+2026-11-13T20:48:25.1583600Z Target: arm64-apple-darwin24.6.0
+2026-11-13T20:48:25.1836190Z ##[group]Run actions/checkout@v4
+2026-11-13T20:48:25.1836500Z with:
+2026-11-13T20:48:25.1836700Z   repository: mwagner-webdev/botlish
+2026-11-13T20:48:25.1836980Z   ref: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:48:25.1837270Z   path: botlish-src
+2026-11-13T20:48:25.1839390Z   token: ***
+2026-11-13T20:48:25.1839590Z   ssh-strict: true
+2026-11-13T20:48:25.1839780Z   ssh-user: git
+2026-11-13T20:48:25.1839990Z   persist-credentials: true
+2026-11-13T20:48:25.1840200Z   clean: true
+2026-11-13T20:48:25.1840500Z   sparse-checkout-cone-mode: true
+2026-11-13T20:48:25.1840740Z   fetch-depth: 1
+2026-11-13T20:48:25.1840950Z   fetch-tags: false
+2026-11-13T20:48:25.1841170Z   show-progress: true
+2026-11-13T20:48:25.1841390Z   lfs: false
+2026-11-13T20:48:25.1841780Z   submodules: false
+2026-11-13T20:48:25.1841990Z   set-safe-directory: true
+2026-11-13T20:48:25.1842250Z   allow-unsafe-pr-checkout: false
+2026-11-13T20:48:25.1842630Z env:
+2026-11-13T20:48:25.1843000Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:48:25.1843540Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:48:25.1844160Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:48:25.1844550Z ##[endgroup]
+2026-11-13T20:48:25.3078000Z Syncing repository: mwagner-webdev/botlish
+2026-11-13T20:48:25.3082480Z ##[group]Getting Git version info
+2026-11-13T20:48:25.3084080Z Working directory is '/Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-src'
+2026-11-13T20:48:25.3118610Z [command]/opt/homebrew/bin/git version
+2026-11-13T20:48:25.3215790Z git version 2.56.0
+2026-11-13T20:48:25.3233450Z ##[endgroup]
+2026-11-13T20:48:25.3252600Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/73598d19-a355-4124-b8fc-fef09e2eccb7/.gitconfig'
+2026-11-13T20:48:25.3253570Z Temporarily overriding HOME='/Users/runner/work/_temp/73598d19-a355-4124-b8fc-fef09e2eccb7' before making global git config changes
+2026-11-13T20:48:25.3254620Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-13T20:48:25.3256170Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-src
+2026-11-13T20:48:25.3349880Z ##[group]Initializing the repository
+2026-11-13T20:48:25.3355090Z [command]/opt/homebrew/bin/git init /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-src
+2026-11-13T20:48:25.3470000Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-13T20:48:25.3471220Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-13T20:48:25.3471990Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-13T20:48:25.3474310Z hint: call:
+2026-11-13T20:48:25.3474620Z hint:
+2026-11-13T20:48:25.3475090Z hint: 	git config --global init.defaultBranch <name>
+2026-11-13T20:48:25.3475950Z hint:
+2026-11-13T20:48:25.3476310Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-13T20:48:25.3476800Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-13T20:48:25.3478150Z hint:
+2026-11-13T20:48:25.3478820Z hint: 	git branch -m <name>
+2026-11-13T20:48:25.3480590Z hint:
+2026-11-13T20:48:25.3481550Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-13T20:48:25.3482850Z Initialized empty Git repository in /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-src/.git/
+2026-11-13T20:48:25.3487490Z [command]/opt/homebrew/bin/git remote add origin https://github.com/mwagner-webdev/botlish
+2026-11-13T20:48:25.3582090Z ##[endgroup]
+2026-11-13T20:48:25.3583130Z ##[group]Disabling automatic garbage collection
+2026-11-13T20:48:25.3584970Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2026-11-13T20:48:25.3662410Z ##[endgroup]
+2026-11-13T20:48:25.3662800Z ##[group]Setting up auth
+2026-11-13T20:48:25.3669880Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-13T20:48:25.3740130Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-13T20:48:25.4646720Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-13T20:48:25.4716750Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-13T20:48:25.6022970Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-13T20:48:25.6112910Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-13T20:48:25.7158360Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-13T20:48:25.7242930Z ##[endgroup]
+2026-11-13T20:48:25.7301940Z ##[group]Fetching the repository
+2026-11-13T20:48:25.7308520Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:48:31.8896410Z From https://github.com/mwagner-webdev/botlish
+2026-11-13T20:48:31.8898600Z  * branch            cdb751b0ca6171b2a1bcf46a09907316a6a6cb05 -> FETCH_HEAD
+2026-11-13T20:48:31.8959560Z ##[endgroup]
+2026-11-13T20:48:31.8968140Z ##[group]Determining the checkout info
+2026-11-13T20:48:31.8971010Z ##[endgroup]
+2026-11-13T20:48:31.8980660Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2026-11-13T20:48:31.9088110Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-13T20:48:31.9183850Z ##[group]Checking out the ref
+2026-11-13T20:48:31.9191500Z [command]/opt/homebrew/bin/git checkout --progress --force cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:48:32.9990260Z Updating files:  40% (4257/10440)
+2026-11-13T20:48:33.0304220Z Updating files:  41% (4281/10440)
+2026-11-13T20:48:33.0556710Z Updating files:  42% (4385/10440)
+2026-11-13T20:48:33.0924870Z Updating files:  43% (4490/10440)
+2026-11-13T20:48:33.1274370Z Updating files:  44% (4594/10440)
+2026-11-13T20:48:33.1420560Z Updating files:  45% (4698/10440)
+2026-11-13T20:48:33.1631670Z Updating files:  46% (4803/10440)
+2026-11-13T20:48:33.1881090Z Updating files:  47% (4907/10440)
+2026-11-13T20:48:33.2054460Z Updating files:  48% (5012/10440)
+2026-11-13T20:48:33.2423810Z Updating files:  49% (5116/10440)
+2026-11-13T20:48:33.2622540Z Updating files:  50% (5220/10440)
+2026-11-13T20:48:33.2803840Z Updating files:  51% (5325/10440)
+2026-11-13T20:48:33.2994710Z Updating files:  52% (5429/10440)
+2026-11-13T20:48:33.3241020Z Updating files:  53% (5534/10440)
+2026-11-13T20:48:33.3421000Z Updating files:  54% (5638/10440)
+2026-11-13T20:48:33.3624470Z Updating files:  55% (5742/10440)
+2026-11-13T20:48:33.3893750Z Updating files:  56% (5847/10440)
+2026-11-13T20:48:33.4389670Z Updating files:  57% (5951/10440)
+2026-11-13T20:48:33.4737450Z Updating files:  58% (6056/10440)
+2026-11-13T20:48:33.5253580Z Updating files:  59% (6160/10440)
+2026-11-13T20:48:33.5611300Z Updating files:  60% (6264/10440)
+2026-11-13T20:48:33.5830580Z Updating files:  61% (6369/10440)
+2026-11-13T20:48:33.5993440Z Updating files:  62% (6473/10440)
+2026-11-13T20:48:33.6274690Z Updating files:  63% (6578/10440)
+2026-11-13T20:48:33.6358690Z Updating files:  64% (6682/10440)
+2026-11-13T20:48:33.6583920Z Updating files:  65% (6786/10440)
+2026-11-13T20:48:33.7384550Z Updating files:  66% (6891/10440)
+2026-11-13T20:48:33.7589190Z Updating files:  67% (6995/10440)
+2026-11-13T20:48:33.7766450Z Updating files:  68% (7100/10440)
+2026-11-13T20:48:33.7991900Z Updating files:  69% (7204/10440)
+2026-11-13T20:48:33.8119640Z Updating files:  70% (7308/10440)
+2026-11-13T20:48:33.8489710Z Updating files:  71% (7413/10440)
+2026-11-13T20:48:33.8548710Z Updating files:  72% (7517/10440)
+2026-11-13T20:48:33.8699120Z Updating files:  73% (7622/10440)
+2026-11-13T20:48:33.8871250Z Updating files:  74% (7726/10440)
+2026-11-13T20:48:33.8975780Z Updating files:  75% (7830/10440)
+2026-11-13T20:48:33.9112900Z Updating files:  76% (7935/10440)
+2026-11-13T20:48:33.9295750Z Updating files:  77% (8039/10440)
+2026-11-13T20:48:33.9431580Z Updating files:  78% (8144/10440)
+2026-11-13T20:48:33.9432910Z Updating files:  79% (8248/10440)
+2026-11-13T20:48:33.9530050Z Updating files:  79% (8253/10440)
+2026-11-13T20:48:33.9704940Z Updating files:  80% (8352/10440)
+2026-11-13T20:48:33.9861520Z Updating files:  81% (8457/10440)
+2026-11-13T20:48:34.0000240Z Updating files:  82% (8561/10440)
+2026-11-13T20:48:34.0165140Z Updating files:  83% (8666/10440)
+2026-11-13T20:48:34.0464010Z Updating files:  84% (8770/10440)
+2026-11-13T20:48:34.0638120Z Updating files:  85% (8874/10440)
+2026-11-13T20:48:34.0997900Z Updating files:  86% (8979/10440)
+2026-11-13T20:48:34.1207780Z Updating files:  87% (9083/10440)
+2026-11-13T20:48:34.1583990Z Updating files:  88% (9188/10440)
+2026-11-13T20:48:34.1833070Z Updating files:  89% (9292/10440)
+2026-11-13T20:48:34.2454140Z Updating files:  90% (9396/10440)
+2026-11-13T20:48:34.2886990Z Updating files:  91% (9501/10440)
+2026-11-13T20:48:34.3193100Z Updating files:  92% (9605/10440)
+2026-11-13T20:48:34.3444240Z Updating files:  93% (9710/10440)
+2026-11-13T20:48:34.3658830Z Updating files:  94% (9814/10440)
+2026-11-13T20:48:34.4280100Z Updating files:  95% (9918/10440)
+2026-11-13T20:48:34.4518160Z Updating files:  96% (10023/10440)
+2026-11-13T20:48:34.4789300Z Updating files:  97% (10127/10440)
+2026-11-13T20:48:34.5005030Z Updating files:  98% (10232/10440)
+2026-11-13T20:48:34.5259070Z Updating files:  99% (10336/10440)
+2026-11-13T20:48:34.5260170Z Updating files: 100% (10440/10440)
+2026-11-13T20:48:34.5260970Z Updating files: 100% (10440/10440), done.
+2026-11-13T20:48:34.5424410Z HEAD is now at cdb751b Report: the merge with main and the merged tree's checks
+2026-11-13T20:48:34.5481010Z ##[endgroup]
+2026-11-13T20:48:34.5649230Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2026-11-13T20:48:34.5765180Z cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:48:35.0003800Z ##[group]Run actions/cache@v4
+2026-11-13T20:48:35.0033750Z with:
+2026-11-13T20:48:35.0033990Z   path: ~/.cache/botlish/tcl-9.0.1
+2026-11-13T20:48:35.0034440Z   key: tcl-9.0.1-macOS-ARM64-19074e5eedbcfafe82f1fe672dcbda0ea0b7d1222da550b4ebe942addd45be86
+2026-11-13T20:48:35.0035070Z   enableCrossOsArchive: false
+2026-11-13T20:48:35.0035340Z   fail-on-cache-miss: false
+2026-11-13T20:48:35.0035570Z   lookup-only: false
+2026-11-13T20:48:35.0035750Z   save-always: false
+2026-11-13T20:48:35.0036010Z env:
+2026-11-13T20:48:35.0036190Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:48:35.0036750Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:48:35.0037390Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:48:35.0037820Z ##[endgroup]
+2026-11-13T20:48:35.1720940Z (node:1357) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-13T20:48:35.1728880Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-13T20:48:35.2938590Z (node:1357) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-13T20:48:35.2947430Z Cache hit for: tcl-9.0.1-macOS-ARM64-19074e5eedbcfafe82f1fe672dcbda0ea0b7d1222da550b4ebe942addd45be86
+2026-11-13T20:48:35.5026000Z Received 3525925 of 3525925 (100.0%), 20.6 MBs/sec
+2026-11-13T20:48:35.5128860Z Cache Size: ~3 MB (3525925 B)
+2026-11-13T20:48:35.5186620Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/6459d9e1-49e5-4766-a351-14731bd9069f/cache.tzst -P -C /Users/runner/work/sqlite-botpkg/sqlite-botpkg --delay-directory-restore --use-compress-program unzstd
+2026-11-13T20:48:35.9118490Z Cache restored successfully
+2026-11-13T20:48:35.9424040Z Cache restored from key: tcl-9.0.1-macOS-ARM64-19074e5eedbcfafe82f1fe672dcbda0ea0b7d1222da550b4ebe942addd45be86
+2026-11-13T20:48:35.9541920Z ##[group]Run tests/platform/setup-macos.sh "$GITHUB_PATH"
+2026-11-13T20:48:35.9542300Z [36;1mtests/platform/setup-macos.sh "$GITHUB_PATH"[0m
+2026-11-13T20:48:35.9616380Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:48:35.9617340Z env:
+2026-11-13T20:48:35.9617940Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:48:35.9619330Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:48:35.9620940Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:48:35.9621950Z ##[endgroup]
+2026-11-13T20:48:36.6695490Z info: syncing channel updates for stable-aarch64-apple-darwin
+2026-11-13T20:48:36.9780610Z info: latest update on 2026-11-12 for version 1.100.0 (0ef1bc386 2026-11-09)
+2026-11-13T20:48:37.0000330Z info: removing previous version of component rustfmt
+2026-11-13T20:48:37.0046740Z info: removing previous version of component clippy
+2026-11-13T20:48:37.0078000Z info: removing previous version of component cargo
+2026-11-13T20:48:37.0220350Z info: removing previous version of component rust-std
+2026-11-13T20:48:37.0394130Z info: removing previous version of component rustc
+2026-11-13T20:48:37.0541030Z info: downloading 5 components
+2026-11-13T20:48:45.2062060Z 
+2026-11-13T20:48:45.2699060Z   stable-aarch64-apple-darwin updated - rustc 1.100.0 (0ef1bc386 2026-11-09) (from rustc 1.99.1 (58cf8f9c3 2026-10-13))
+2026-11-13T20:48:45.2722730Z info: self-update is disabled for this build of rustup
+2026-11-13T20:48:45.2723620Z 
+2026-11-13T20:48:45.2725480Z info: any updates to rustup will need to be fetched with your system package manager
+2026-11-13T20:48:45.3359330Z info: using existing install for stable-aarch64-apple-darwin
+2026-11-13T20:48:45.3384800Z info: default toolchain set to stable-aarch64-apple-darwin
+2026-11-13T20:48:45.3385970Z 
+2026-11-13T20:48:45.3640260Z   stable-aarch64-apple-darwin unchanged - rustc 1.100.0 (0ef1bc386 2026-11-09)
+2026-11-13T20:48:45.3648590Z 
+2026-11-13T20:48:45.4313480Z Tcl 9.0.1 (/Users/runner/.cache/botlish/tcl-9.0.1/bin/tclsh9.0), tcltest 2.5.9
+2026-11-13T20:48:45.4814580Z rustc 1.100.0 (0ef1bc386 2026-11-09)
+2026-11-13T20:48:45.5791500Z cargo 1.100.0 (3acc79c0c 2026-11-05)
+2026-11-13T20:48:45.8013970Z ##[group]Run actions/cache@v4
+2026-11-13T20:48:45.8014360Z with:
+2026-11-13T20:48:45.8014650Z   path: ~/.cargo/registry
+~/.cargo/git
+botlish-src/native/target
+
+2026-11-13T20:48:45.8015320Z   key: native-cargo-macOS-ARM64-5a7538aa60357741ce56088c660286d57a3199b2585a0a0b1ffcf49a59bf4486
+2026-11-13T20:48:45.8015900Z   restore-keys: native-cargo-macOS-ARM64-
+2026-11-13T20:48:45.8016150Z   enableCrossOsArchive: false
+2026-11-13T20:48:45.8016410Z   fail-on-cache-miss: false
+2026-11-13T20:48:45.8016610Z   lookup-only: false
+2026-11-13T20:48:45.8016870Z   save-always: false
+2026-11-13T20:48:45.8017150Z env:
+2026-11-13T20:48:45.8017400Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:48:45.8018020Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:48:45.8018680Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:48:45.8019210Z ##[endgroup]
+2026-11-13T20:48:45.9576860Z (node:1577) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-13T20:48:45.9577820Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-13T20:48:46.0527740Z Cache hit for: native-cargo-macOS-ARM64-5a7538aa60357741ce56088c660286d57a3199b2585a0a0b1ffcf49a59bf4486
+2026-11-13T20:48:46.0626840Z (node:1577) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-13T20:48:47.1654120Z Received 134217728 of 321873111 (41.7%), 120.8 MBs/sec
+2026-11-13T20:48:48.1725000Z Received 272629760 of 321873111 (84.7%), 126.0 MBs/sec
+2026-11-13T20:48:48.4469870Z Received 321873111 of 321873111 (100.0%), 132.0 MBs/sec
+2026-11-13T20:48:48.4515800Z Cache Size: ~307 MB (321873111 B)
+2026-11-13T20:48:48.4523470Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/b6fab793-4ff3-4044-b70f-7ee9e588e739/cache.tzst -P -C /Users/runner/work/sqlite-botpkg/sqlite-botpkg --delay-directory-restore --use-compress-program unzstd
+2026-11-13T20:48:52.1248560Z Cache restored successfully
+2026-11-13T20:48:52.1419280Z Cache restored from key: native-cargo-macOS-ARM64-5a7538aa60357741ce56088c660286d57a3199b2585a0a0b1ffcf49a59bf4486
+2026-11-13T20:48:52.1703970Z ##[group]Run cargo build --release --manifest-path native/Cargo.toml
+2026-11-13T20:48:52.1704660Z [36;1mcargo build --release --manifest-path native/Cargo.toml[0m
+2026-11-13T20:48:52.1767660Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:48:52.1768170Z env:
+2026-11-13T20:48:52.1768540Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:48:52.1769230Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:48:52.1778840Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:48:52.1780000Z ##[endgroup]
+2026-11-13T20:48:52.9471170Z    Compiling botlish-runtime v0.1.0 (/Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-src/native/runtime-archive)
+2026-11-13T20:48:52.9474390Z    Compiling botlish-native v0.1.0 (/Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-src/native)
+2026-11-13T20:49:17.2934340Z     Finished `release` profile [optimized + debuginfo] target(s) in 24.97s
+2026-11-13T20:49:17.5413570Z ##[group]Run actions/cache@v4
+2026-11-13T20:49:17.5413910Z with:
+2026-11-13T20:49:17.5414140Z   path: ~/Library/Caches/botlish-app
+2026-11-13T20:49:17.5414740Z   key: app-tcl-framework-macOS-ARM64-658924229c531e0fbea2ca8f5401d474d18ac92736b9c194c88a004871f90576
+2026-11-13T20:49:17.5415350Z   enableCrossOsArchive: false
+2026-11-13T20:49:17.5415660Z   fail-on-cache-miss: false
+2026-11-13T20:49:17.5415910Z   lookup-only: false
+2026-11-13T20:49:17.5416360Z   save-always: false
+2026-11-13T20:49:17.5416630Z env:
+2026-11-13T20:49:17.5416870Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:49:17.5417430Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:49:17.5418100Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:49:17.5418500Z ##[endgroup]
+2026-11-13T20:49:17.7396680Z (node:1996) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-13T20:49:17.7397490Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-13T20:49:17.8400630Z Cache hit for: app-tcl-framework-macOS-ARM64-658924229c531e0fbea2ca8f5401d474d18ac92736b9c194c88a004871f90576
+2026-11-13T20:49:17.8518690Z (node:1996) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-13T20:49:18.0469480Z Received 1322524 of 1322524 (100.0%), 9.2 MBs/sec
+2026-11-13T20:49:18.0473210Z Cache Size: ~1 MB (1322524 B)
+2026-11-13T20:49:18.0497230Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/12f38a0e-41ea-4093-a00d-28696ce567df/cache.tzst -P -C /Users/runner/work/sqlite-botpkg/sqlite-botpkg --delay-directory-restore --use-compress-program unzstd
+2026-11-13T20:49:18.1205210Z Cache restored successfully
+2026-11-13T20:49:18.1351770Z Cache restored from key: app-tcl-framework-macOS-ARM64-658924229c531e0fbea2ca8f5401d474d18ac92736b9c194c88a004871f90576
+2026-11-13T20:49:18.1425030Z ##[group]Run single/macos/build.sh -o "$GITHUB_WORKSPACE/botlish-macos" 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+2026-11-13T20:49:18.1425840Z [36;1msingle/macos/build.sh -o "$GITHUB_WORKSPACE/botlish-macos" 2>&1 | tee "$GITHUB_WORKSPACE/build.log"[0m
+2026-11-13T20:49:18.1509190Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:49:18.1509520Z env:
+2026-11-13T20:49:18.1509860Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:49:18.1510500Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:49:18.1511120Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:49:18.1511560Z ##[endgroup]
+2026-11-13T20:49:18.3253740Z == Tcl.framework: /Users/runner/Library/Caches/botlish-app/tcl-framework-88023870e60b8b51 (tcl 9.0.1;sha256 a72b1607d7a399c75148c80fcdead88ed3371a29884181f200f2200cdee33bbc;configure --enable-framework --libdir=/Frameworks --prefix=/usr/local --disable-zipfs CFLAGS=-O2 -arch arm64;deployment-target 11.0;install-name @rpath/Tcl.framework/Versions/9.0/Tcl;)
+2026-11-13T20:49:18.3349870Z == building the native backend (the test suite's, for its runtime archive's check)
+2026-11-13T20:49:18.4952070Z     Finished `release` profile [optimized + debuginfo] target(s) in 0.10s
+2026-11-13T20:49:27.7319440Z runtime archive libraries: -liconv -lSystem -lc -lm (as rustc accounts for them)
+2026-11-13T20:49:27.7320490Z == building the distribution's native backend (no JIT)
+2026-11-13T20:49:28.0027170Z    Compiling botlish-runtime v0.1.0 (/Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-src/native/runtime-archive)
+2026-11-13T20:49:28.0030410Z    Compiling botlish-native v0.1.0 (/Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-src/native)
+2026-11-13T20:49:47.8417840Z     Finished `release` profile [optimized + debuginfo] target(s) in 20.06s
+2026-11-13T20:49:57.9482850Z == the launcher
+2026-11-13T20:49:58.6560050Z == signing (ad hoc, hardened runtime)
+2026-11-13T20:49:58.6900330Z /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-macos/Botlish.app/Contents/Frameworks/Tcl.framework/Versions/9.0: replacing existing signature
+2026-11-13T20:49:58.7407500Z /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-macos/Botlish.app/Contents/MacOS/botlish-native: replacing existing signature
+2026-11-13T20:49:59.7495790Z /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-macos/Botlish.app: replacing existing signature
+2026-11-13T20:49:59.7853790Z signed ad hoc (hardened runtime, no timestamp): /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-macos/Botlish.app
+2026-11-13T20:49:59.8764790Z    layout: ok
+2026-11-13T20:50:01.4758440Z    dependencies: ok (arm64; deployment target 11.0 )
+2026-11-13T20:50:01.7367140Z    signature: ok (ad hoc, hardened runtime, no entitlement; application, framework and driver verify strictly)
+2026-11-13T20:50:02.4672690Z    no JIT: ok (no JIT crate in the driver; no Mach-O imports JIT memory or instruction-cache functions)
+2026-11-13T20:50:02.9615630Z    archive: ok (258 files; the compiler's directories are the checkout's, file for file)
+2026-11-13T20:50:04.7005800Z    layout: ok
+2026-11-13T20:50:05.0077910Z    dependencies: ok (arm64; deployment target 11.0 )
+2026-11-13T20:50:05.2758290Z    signature: ok (ad hoc, hardened runtime, no entitlement; application, framework and driver verify strictly)
+2026-11-13T20:50:05.4236490Z    no JIT: ok (no JIT crate in the driver; no Mach-O imports JIT memory or instruction-cache functions)
+2026-11-13T20:50:05.7387010Z    archive: ok (258 files; the compiler's directories are the checkout's, file for file)
+2026-11-13T20:50:05.7557840Z == /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-macos/Botlish.app (32916 KiB), /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-macos/botlish-macos-aarch64.zip (12629746 bytes): 57ac5598bf57da79713764b690c254c4f17575d1540956f7e65ea5fee712b527
+2026-11-13T20:50:05.8154580Z ##[group]Run botlish-macos/Botlish.app/Contents/MacOS/botlish -version
+2026-11-13T20:50:05.8155240Z [36;1mbotlish-macos/Botlish.app/Contents/MacOS/botlish -version[0m
+2026-11-13T20:50:05.8156830Z [36;1mcat botlish-macos/botlish-macos-aarch64.zip.sha256[0m
+2026-11-13T20:50:05.8206710Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:50:05.8207170Z env:
+2026-11-13T20:50:05.8207500Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:50:05.8208240Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:50:05.8209170Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:50:05.8209760Z ##[endgroup]
+2026-11-13T20:50:06.0324740Z Botlish compiler (no release version; this is a development build)
+2026-11-13T20:50:06.0326180Z source revision: cdb751b, packaged
+2026-11-13T20:50:06.0327160Z front end: 18f05c733c33599f-5527019
+2026-11-13T20:50:06.0328020Z Tcl: 9.0.1
+2026-11-13T20:50:06.0331660Z native backend: packaged (efb3df28-10992464-97eabd25-14943816)
+2026-11-13T20:50:06.0333700Z native JIT: unavailable (programs run natively as executables: -aot-run)
+2026-11-13T20:50:06.0334170Z invocation: botlish
+2026-11-13T20:50:06.0374450Z 57ac5598bf57da79713764b690c254c4f17575d1540956f7e65ea5fee712b527  botlish-macos-aarch64.zip
+2026-11-13T20:50:06.0437080Z ##[group]Run botlish-macos/Botlish.app/Contents/MacOS/botlish -version
+2026-11-13T20:50:06.0438710Z [36;1mbotlish-macos/Botlish.app/Contents/MacOS/botlish -version[0m
+2026-11-13T20:50:06.0439960Z [36;1mcat botlish-macos/botlish-macos-aarch64.zip.sha256[0m
+2026-11-13T20:50:06.0441510Z [36;1mecho "BOT=$GITHUB_WORKSPACE/botlish-macos/Botlish.app/Contents/MacOS/botlish" >> "$GITHUB_ENV"[0m
+2026-11-13T20:50:06.0497940Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:50:06.0498380Z env:
+2026-11-13T20:50:06.0498670Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:50:06.0499410Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:50:06.0500120Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:50:06.0500620Z ##[endgroup]
+2026-11-13T20:50:06.1711710Z Botlish compiler (no release version; this is a development build)
+2026-11-13T20:50:06.1712340Z source revision: cdb751b, packaged
+2026-11-13T20:50:06.1712740Z front end: 18f05c733c33599f-5527019
+2026-11-13T20:50:06.1713050Z Tcl: 9.0.1
+2026-11-13T20:50:06.1713450Z native backend: packaged (efb3df28-10992464-97eabd25-14943816)
+2026-11-13T20:50:06.1713960Z native JIT: unavailable (programs run natively as executables: -aot-run)
+2026-11-13T20:50:06.1714410Z invocation: botlish
+2026-11-13T20:50:06.1752390Z 57ac5598bf57da79713764b690c254c4f17575d1540956f7e65ea5fee712b527  botlish-macos-aarch64.zip
+2026-11-13T20:50:06.1821010Z ##[group]Run for i in $(seq 1 480); do
+2026-11-13T20:50:06.1821360Z [36;1mfor i in $(seq 1 480); do[0m
+2026-11-13T20:50:06.1822000Z [36;1m  st=$(gh run view "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --json jobs --jq '.jobs[] | select(.name | startswith("package")) | .conclusion')[0m
+2026-11-13T20:50:06.1822660Z [36;1m  echo "package job conclusion: '$st'"[0m
+2026-11-13T20:50:06.1823000Z [36;1m  if [ "$st" = success ]; then break; fi[0m
+2026-11-13T20:50:06.1823560Z [36;1m  if [ "$st" = failure ] || [ "$st" = cancelled ] || [ "$st" = skipped ]; then echo "::error::the package job did not succeed"; exit 1; fi[0m
+2026-11-13T20:50:06.1824150Z [36;1m  sleep 30[0m
+2026-11-13T20:50:06.1824360Z [36;1mdone[0m
+2026-11-13T20:50:06.1824670Z [36;1m[ "$st" = success ] || { echo "::error::timed out waiting for the package job"; exit 1; }[0m
+2026-11-13T20:50:06.1825200Z [36;1mgh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" -n sqlite-botpkg -D dist[0m
+2026-11-13T20:50:06.1825660Z [36;1mls -la dist[0m
+2026-11-13T20:50:06.1859330Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:50:06.1859630Z env:
+2026-11-13T20:50:06.1859900Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:50:06.1860440Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:50:06.1861030Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:50:06.1861650Z   BOT: /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-macos/Botlish.app/Contents/MacOS/botlish
+2026-11-13T20:50:06.1864210Z   GH_TOKEN: ***
+2026-11-13T20:50:06.1864470Z ##[endgroup]
+2026-11-13T20:50:07.4230210Z package job conclusion: ''
+2026-11-13T20:50:38.5330960Z package job conclusion: ''
+2026-11-13T20:51:09.5964070Z package job conclusion: ''
+2026-11-13T20:51:40.6502100Z package job conclusion: ''
+2026-11-13T20:52:11.7269180Z package job conclusion: ''
+2026-11-13T20:52:42.8270810Z package job conclusion: ''
+2026-11-13T20:53:13.9577000Z package job conclusion: ''
+2026-11-13T20:53:45.0334830Z package job conclusion: ''
+2026-11-13T20:54:16.3434410Z package job conclusion: ''
+2026-11-13T20:54:47.6884640Z package job conclusion: ''
+2026-11-13T20:55:19.1689290Z package job conclusion: ''
+2026-11-13T20:55:50.4868310Z package job conclusion: ''
+2026-11-13T20:56:21.6119480Z package job conclusion: ''
+2026-11-13T20:56:53.2339030Z package job conclusion: ''
+2026-11-13T20:57:24.5566190Z package job conclusion: ''
+2026-11-13T20:57:55.8234050Z package job conclusion: 'success'
+2026-11-13T20:57:56.7550360Z total 2568
+2026-11-13T20:57:56.7556120Z drwxr-xr-x   4 runner  staff      128 Nov 13 20:57 .
+2026-11-13T20:57:56.7556590Z drwxr-xr-x  19 runner  staff      608 Nov 13 20:57 ..
+2026-11-13T20:57:56.7557190Z -rw-r--r--   1 runner  staff  1310181 Nov 13 20:57 sqlite-0.1.0.botpkg
+2026-11-13T20:57:56.7561000Z -rw-r--r--   1 runner  staff       91 Nov 13 20:57 sqlite-0.1.0.botpkg.sha256
+2026-11-13T20:57:56.7747280Z ##[group]Run scripts/fetch_oracle.sh build/oracle
+2026-11-13T20:57:56.7747760Z [36;1mscripts/fetch_oracle.sh build/oracle[0m
+2026-11-13T20:57:56.8068110Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:57:56.8069160Z env:
+2026-11-13T20:57:56.8069780Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:57:56.8071250Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:57:56.8073490Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:57:56.8075140Z   BOT: /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-macos/Botlish.app/Contents/MacOS/botlish
+2026-11-13T20:57:56.8076400Z ##[endgroup]
+2026-11-13T20:57:58.0432200Z 3.54.1 2026-10-16 14:45:20 555e07ef33f69a0957d24d8e555b702464a131d6f1607f4c3c1e4551e8e6ca76 (64-bit)
+2026-11-13T20:57:58.0512710Z ##[group]Run scripts/run_acceptance.sh dist/sqlite-0.1.0.botpkg 2>&1 | tee acceptance-macos.log
+2026-11-13T20:57:58.0513820Z [36;1mscripts/run_acceptance.sh dist/sqlite-0.1.0.botpkg 2>&1 | tee acceptance-macos.log[0m
+2026-11-13T20:57:58.0554780Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:57:58.0561190Z env:
+2026-11-13T20:57:58.0561570Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:57:58.0562150Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:57:58.0562920Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:57:58.0563590Z   BOT: /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-macos/Botlish.app/Contents/MacOS/botlish
+2026-11-13T20:57:58.0564110Z ##[endgroup]
+2026-11-13T20:57:58.1243700Z == platform: Darwin 24.6.0 arm64
+2026-11-13T20:57:58.3406220Z == compiler: Botlish compiler (no release version; this is a development build)
+2026-11-13T20:57:58.3407010Z == compiler: source revision: cdb751b, packaged
+2026-11-13T20:57:58.3407820Z == compiler: front end: 18f05c733c33599f-5527019
+2026-11-13T20:57:58.3408170Z == compiler: Tcl: 9.0.1
+2026-11-13T20:57:58.6190300Z error: the native dependencies of the packages for macos-aarch64:
+2026-11-13T20:57:58.6212620Z   system library m: verifying a system library on macos is not implemented (the plan reports it unverified) (declared by instance sqlite) (PM NATIVE)
+2026-11-13T20:57:58.6215850Z FAIL install
+2026-11-13T20:57:58.6235950Z ##[error]Process completed with exit code 1.
+2026-11-13T20:57:58.6525690Z ##[group]Run cd build/consumer-run
+2026-11-13T20:57:58.6526010Z [36;1mcd build/consumer-run[0m
+2026-11-13T20:57:58.6526330Z [36;1mfile ac_basic; lipo -archs ac_basic; otool -L ac_basic[0m
+2026-11-13T20:57:58.6559900Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:57:58.6560210Z env:
+2026-11-13T20:57:58.6560450Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:57:58.6560990Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:57:58.6561700Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:57:58.6562280Z   BOT: /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-macos/Botlish.app/Contents/MacOS/botlish
+2026-11-13T20:57:58.6562720Z ##[endgroup]
+2026-11-13T20:57:58.7091750Z ac_basic: cannot open `ac_basic' (No such file or directory)
+2026-11-13T20:57:58.7890520Z fatal error: /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo: can't open input file: ac_basic (No such file or directory)
+2026-11-13T20:57:58.7894940Z ##[error]Process completed with exit code 1.
+2026-11-13T20:57:58.7929320Z ##[group]Run cd build/consumer-run
+2026-11-13T20:57:58.7929650Z [36;1mcd build/consumer-run[0m
+2026-11-13T20:57:58.7929930Z [36;1m"$BOT" -emit-native-executable bench.bot >/dev/null[0m
+2026-11-13T20:57:58.7930360Z [36;1m./bench | tee "$GITHUB_WORKSPACE/bench-botlish-macos.log"[0m
+2026-11-13T20:57:58.7965830Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:57:58.7966160Z env:
+2026-11-13T20:57:58.7966420Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:57:58.7967060Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:57:58.7967890Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:57:58.7968530Z   BOT: /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-macos/Botlish.app/Contents/MacOS/botlish
+2026-11-13T20:57:58.7968970Z ##[endgroup]
+2026-11-13T20:57:59.2190940Z bench.bot: bench.bot:4:8: unknown namespace "sqlite": no such module file /Users/runner/work/sqlite-botpkg/sqlite-botpkg/build/consumer-run/sqlite.bot (an application's own modules are the files beside its entry program) (SURFACE MODULE UNKNOWN-NAMESPACE)
+2026-11-13T20:57:59.2737990Z help: botlish -help error.unknown-namespace
+2026-11-13T20:57:59.2826320Z ##[error]Process completed with exit code 1.
+2026-11-13T20:57:59.2938780Z ##[group]Run actions/upload-artifact@v4
+2026-11-13T20:57:59.2939540Z with:
+2026-11-13T20:57:59.2940010Z   name: acceptance-macos-aarch64
+2026-11-13T20:57:59.2940940Z   path: acceptance-macos.log
+bench-botlish-macos.log
+build/consumer-run/*.log
+
+2026-11-13T20:57:59.2941870Z   if-no-files-found: warn
+2026-11-13T20:57:59.2942860Z   compression-level: 6
+2026-11-13T20:57:59.2943310Z   overwrite: false
+2026-11-13T20:57:59.2943530Z   include-hidden-files: false
+2026-11-13T20:57:59.2943750Z env:
+2026-11-13T20:57:59.2943980Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:57:59.2944510Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:57:59.2945120Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:57:59.2945700Z   BOT: /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-macos/Botlish.app/Contents/MacOS/botlish
+2026-11-13T20:57:59.2946190Z ##[endgroup]
+2026-11-13T20:57:59.7408430Z (node:12136) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-13T20:57:59.7510690Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-13T20:57:59.7586300Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-11-13T20:57:59.7588830Z The least common ancestor is /Users/runner/work/sqlite-botpkg/sqlite-botpkg. This will be the root directory of the artifact
+2026-11-13T20:57:59.7589480Z With the provided path, there will be 1 file uploaded
+2026-11-13T20:57:59.7589950Z Artifact name is valid!
+2026-11-13T20:57:59.7590620Z Root directory input is valid!
+2026-11-13T20:58:00.0706200Z (node:12136) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-13T20:58:00.0767570Z Beginning upload of artifact content to blob storage
+2026-11-13T20:58:00.1175590Z Uploaded bytes 454
+2026-11-13T20:58:00.1359950Z Finished uploading artifact content to blob storage!
+2026-11-13T20:58:00.1361920Z SHA256 digest of uploaded artifact zip is 8260fd01e0e54809d9541d419cf4d03de6a0e3edf66cb52ba3b7cb0d0cee54ce
+2026-11-13T20:58:00.1363300Z Finalizing artifact upload
+2026-11-13T20:58:00.5271570Z Artifact acceptance-macos-aarch64.zip successfully finalized. Artifact ID 14075963390
+2026-11-13T20:58:00.5274020Z Artifact acceptance-macos-aarch64 has been successfully uploaded! Final size is 454 bytes. Artifact ID is 14075963390
+2026-11-13T20:58:00.5303750Z Artifact download URL: https://github.com/mwagner-webdev/sqlite-botpkg/actions/runs/43497669917/artifacts/14075963390
+2026-11-13T20:58:00.5555000Z ##[group]Run actions/upload-artifact@v4
+2026-11-13T20:58:00.5555640Z with:
+2026-11-13T20:58:00.5555850Z   name: botlish-macos-aarch64
+2026-11-13T20:58:00.5556310Z   path: botlish-macos/botlish-macos-aarch64.zip
+botlish-macos/botlish-macos-aarch64.zip.sha256
+build.log
+
+2026-11-13T20:58:00.5556880Z   if-no-files-found: warn
+2026-11-13T20:58:00.5557120Z   compression-level: 6
+2026-11-13T20:58:00.5557330Z   overwrite: false
+2026-11-13T20:58:00.5557550Z   include-hidden-files: false
+2026-11-13T20:58:00.5557800Z env:
+2026-11-13T20:58:00.5558040Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:58:00.5558680Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:58:00.5559330Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:58:00.5560090Z   BOT: /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-macos/Botlish.app/Contents/MacOS/botlish
+2026-11-13T20:58:00.5560550Z ##[endgroup]
+2026-11-13T20:58:00.9292050Z (node:12252) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-13T20:58:00.9392310Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-13T20:58:01.0520820Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-11-13T20:58:01.0635990Z The least common ancestor is /Users/runner/work/sqlite-botpkg/sqlite-botpkg. This will be the root directory of the artifact
+2026-11-13T20:58:01.0678520Z With the provided path, there will be 3 files uploaded
+2026-11-13T20:58:01.0681010Z Artifact name is valid!
+2026-11-13T20:58:01.0681370Z Root directory input is valid!
+2026-11-13T20:58:01.1195320Z Beginning upload of artifact content to blob storage
+2026-11-13T20:58:01.4214860Z (node:12252) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-13T20:58:01.6767370Z Uploaded bytes 8388608
+2026-11-13T20:58:01.7941880Z Uploaded bytes 12511943
+2026-11-13T20:58:01.8153400Z Finished uploading artifact content to blob storage!
+2026-11-13T20:58:01.8264100Z SHA256 digest of uploaded artifact zip is 3f224f9fdc9031a48988fb46ba7e2df94ebb3e41ff120e2f9d0195527fbc1fa6
+2026-11-13T20:58:01.8367240Z Finalizing artifact upload
+2026-11-13T20:58:02.2037910Z Artifact botlish-macos-aarch64.zip successfully finalized. Artifact ID 14076461591
+2026-11-13T20:58:02.2039280Z Artifact botlish-macos-aarch64 has been successfully uploaded! Final size is 12511943 bytes. Artifact ID is 14076461591
+2026-11-13T20:58:02.2040600Z Artifact download URL: https://github.com/mwagner-webdev/sqlite-botpkg/actions/runs/43497669917/artifacts/14076461591
+2026-11-13T20:58:02.2296310Z Post job cleanup.
+2026-11-13T20:58:02.3666230Z [command]/opt/homebrew/bin/git version
+2026-11-13T20:58:02.3920390Z git version 2.56.0
+2026-11-13T20:58:02.3940040Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/6a2c5e8a-0179-4ffa-af4d-1deae4680c21/.gitconfig'
+2026-11-13T20:58:02.3948470Z Temporarily overriding HOME='/Users/runner/work/_temp/6a2c5e8a-0179-4ffa-af4d-1deae4680c21' before making global git config changes
+2026-11-13T20:58:02.3950530Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-13T20:58:02.3953610Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/sqlite-botpkg/sqlite-botpkg/botlish-src
+2026-11-13T20:58:02.4082770Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-13T20:58:02.4164350Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-13T20:58:02.6119700Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-13T20:58:02.6179950Z http.https://github.com/.extraheader
+2026-11-13T20:58:02.6186070Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-13T20:58:02.6266070Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-13T20:58:02.8634850Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-13T20:58:02.8936910Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-13T20:58:03.0153140Z Post job cleanup.
+2026-11-13T20:58:03.0961990Z [command]/opt/homebrew/bin/git version
+2026-11-13T20:58:03.1039930Z git version 2.56.0
+2026-11-13T20:58:03.1059690Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/5553421e-f694-4280-b1ee-c9b4cef340e9/.gitconfig'
+2026-11-13T20:58:03.1065780Z Temporarily overriding HOME='/Users/runner/work/_temp/5553421e-f694-4280-b1ee-c9b4cef340e9' before making global git config changes
+2026-11-13T20:58:03.1066470Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-13T20:58:03.1069160Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/sqlite-botpkg/sqlite-botpkg
+2026-11-13T20:58:03.1156570Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-13T20:58:03.1243130Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-13T20:58:03.2217120Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-13T20:58:03.2273370Z http.https://github.com/.extraheader
+2026-11-13T20:58:03.2300470Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-13T20:58:03.2375100Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-13T20:58:03.3242320Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-13T20:58:03.3308590Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-13T20:58:03.6917060Z Cleaning up orphan processes
+2026-11-13T20:58:05.2534140Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/checkout@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

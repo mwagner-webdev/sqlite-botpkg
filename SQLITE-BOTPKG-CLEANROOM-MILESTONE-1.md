@@ -34,8 +34,8 @@ Full text: `SQLITE-BOTPKG-CAPABILITY-CENSUS.md`. What mattered:
 **Chosen: a pinned upstream amalgamation, compiled once per target into a static archive that the package bundles.** System SQLite was rejected: no `libsqlite3-dev` is installable here without root, versions differ per OS (macOS ships its own), and stable version reporting was a requirement.
 
 * Source: `native/vendor/sqlite-amalgamation-3540100.zip`, committed; `native/build.sh` refuses any file whose SHA3-256 is not the one sqlite.org publishes. Nothing is downloaded at build time. **[executed]**
-* Flags (`native/FLAGS.md`): `-O2 -fPIC`, `SQLITE_THREADSAFE=1`, `SQLITE_DQS=0`, `OMIT_LOAD_EXTENSION`, `OMIT_SHARED_CACHE`, `OMIT_DEPRECATED`, `DEFAULT_MEMSTATUS=0`, `LIKE_DOESNT_MATCH_BLOBS`, `USE_URI=0`, `ENABLE_MATH_FUNCTIONS`. Compiler: host `cc` (GCC 13.3 / Apple clang).
-* Linking: `extern c library "botsqlite3"` in `sqlite.bot`; the package carries `targets/linux-x86_64/native/libbotsqlite3.a` and `targets/macos-aarch64/native/libbotsqlite3.a`, plus a system `m` entry; the installed target view is linked without `-L`. A consumer needs only the host C driver. **[executed]** (Linux) **[CI]** (both).
+* Flags (`native/FLAGS.md`): `-O2 -fPIC`, `SQLITE_THREADSAFE=1`, `SQLITE_DQS=0`, `OMIT_LOAD_EXTENSION`, `OMIT_SHARED_CACHE`, `OMIT_DEPRECATED`, `DEFAULT_MEMSTATUS=0`, `LIKE_DOESNT_MATCH_BLOBS`, `USE_URI=0` (SQL math functions deliberately **not** enabled: see F-25). Compiler: host `cc` (GCC 13.3 / Apple clang).
+* Linking: `extern c library "botsqlite3"` in `sqlite.bot`; the package carries `targets/linux-x86_64/native/libbotsqlite3.a` and `targets/macos-aarch64/native/libbotsqlite3.a`, and **no system library**; the installed target view is linked without `-L`. A consumer needs only the host C driver. **[executed]** (Linux) **[CI]** (both).
 * Reproducibility: the Linux archive built by CI (`ubuntu-24.04`, gcc 13.3) is **bit-identical** to the one built locally: SHA-256 `8add430d9b2722f49b361212b2f28e53589316107abcf87ee6f19d52a32bd2ec` **[CI]** run 43470724971 vs **[executed]**.
 * Only documented API is used (`sqlite3_open_v2`, `prepare_v2`, `step`, `bind_*64`, `column_*`, `changes64`, `exec`, …); no private symbols.
 * Version at run time: `sqlite::version()`, `version_number()`, `source_id()`, `thread_mode()` (`consumer/info.bot` prints them).
@@ -175,7 +175,7 @@ Reading: **no accidental quadratic behaviour** (growth ≈ ×2.1 per doubling af
   botlish verify
   botlish -emit-native-executable myapp.bot
   ```
-  `botlish native plan` prints what links from where (`libbotsqlite3.a` from `.bot_modules/.targets/<T>/sqlite/native/`, `libm` from the system).
+  `botlish native plan` prints what links from where (`libbotsqlite3.a` from `.bot_modules/.targets/<T>/sqlite/native/`, and nothing from the system but libc).
 * The consumer project `consumer/` shares **no file** with `sqlite/`: it is copied into a clean directory and sees the package only through `.bot_modules`.
 * Package documentation: `sqlite/README.md` (API, ownership, error contract, transaction semantics, threading, version policy, Linux/macOS setup).
 

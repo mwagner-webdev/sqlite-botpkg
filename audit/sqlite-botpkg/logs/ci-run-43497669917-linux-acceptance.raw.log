@@ -1,0 +1,379 @@
+﻿2026-11-13T20:58:06.1480457Z Current runner version: '2.338.2'
+2026-11-13T20:58:06.1503889Z ##[group]Runner Image Provisioner
+2026-11-13T20:58:06.1504755Z Hosted Compute Agent
+2026-11-13T20:58:06.1505246Z Version: 20261103.629
+2026-11-13T20:58:06.1505864Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+2026-11-13T20:58:06.1506485Z Build Date: 2026-11-03T17:26:59Z
+2026-11-13T20:58:06.1507358Z Worker ID: {8683a4ad-a2f0-4f14-8956-b772154b28f3}
+2026-11-13T20:58:06.1507971Z Region: westus2
+2026-11-13T20:58:06.1508487Z Cloud: Azure
+2026-11-13T20:58:06.1509001Z ##[endgroup]
+2026-11-13T20:58:06.1510175Z ##[group]Operating System
+2026-11-13T20:58:06.1510687Z Ubuntu
+2026-11-13T20:58:06.1511294Z 24.04.5
+2026-11-13T20:58:06.1511747Z LTS
+2026-11-13T20:58:06.1512231Z ##[endgroup]
+2026-11-13T20:58:06.1512717Z ##[group]Runner Image
+2026-11-13T20:58:06.1513203Z Image: ubuntu-24.04
+2026-11-13T20:58:06.1514160Z Version: 20261111.370.1
+2026-11-13T20:58:06.1515239Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261111.370/images/ubuntu/Ubuntu2404-Readme.md
+2026-11-13T20:58:06.1516563Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261111.370
+2026-11-13T20:58:06.1517511Z ##[endgroup]
+2026-11-13T20:58:06.1518638Z ##[group]GITHUB_TOKEN Permissions
+2026-11-13T20:58:06.1520287Z Actions: read
+2026-11-13T20:58:06.1520894Z Contents: read
+2026-11-13T20:58:06.1521379Z Metadata: read
+2026-11-13T20:58:06.1521887Z ##[endgroup]
+2026-11-13T20:58:06.1523771Z Secret source: Actions
+2026-11-13T20:58:06.1524585Z Cache mode: write
+2026-11-13T20:58:06.1525191Z Prepare workflow directory
+2026-11-13T20:58:06.1856160Z Prepare all required actions
+2026-11-13T20:58:06.1895601Z Getting action download info
+2026-11-13T20:58:06.5252970Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-13T20:58:06.6114088Z Download action repository 'actions/download-artifact@v4' (SHA:d3f86a106a0bac45b974a628896c90dbdf5c8093)
+2026-11-13T20:58:06.9171089Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-11-13T20:58:07.1523600Z Complete job name: acceptance suite (Linux x86-64)
+2026-11-13T20:58:07.2208258Z ##[group]Run actions/checkout@v4
+2026-11-13T20:58:07.2208924Z with:
+2026-11-13T20:58:07.2209311Z   repository: mwagner-webdev/sqlite-botpkg
+2026-11-13T20:58:07.2212354Z   token: ***
+2026-11-13T20:58:07.2212768Z   ssh-strict: true
+2026-11-13T20:58:07.2213160Z   ssh-user: git
+2026-11-13T20:58:07.2213531Z   persist-credentials: true
+2026-11-13T20:58:07.2213929Z   clean: true
+2026-11-13T20:58:07.2214298Z   sparse-checkout-cone-mode: true
+2026-11-13T20:58:07.2214720Z   fetch-depth: 1
+2026-11-13T20:58:07.2215075Z   fetch-tags: false
+2026-11-13T20:58:07.2215435Z   show-progress: true
+2026-11-13T20:58:07.2215803Z   lfs: false
+2026-11-13T20:58:07.2216137Z   submodules: false
+2026-11-13T20:58:07.2216501Z   set-safe-directory: true
+2026-11-13T20:58:07.2217042Z   allow-unsafe-pr-checkout: false
+2026-11-13T20:58:07.2217607Z env:
+2026-11-13T20:58:07.2218033Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:58:07.2218905Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:58:07.2219900Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:58:07.2220542Z ##[endgroup]
+2026-11-13T20:58:07.5211240Z Syncing repository: mwagner-webdev/sqlite-botpkg
+2026-11-13T20:58:07.5213927Z ##[group]Getting Git version info
+2026-11-13T20:58:07.5215108Z Working directory is '/home/runner/work/sqlite-botpkg/sqlite-botpkg'
+2026-11-13T20:58:07.5216937Z [command]/usr/bin/git version
+2026-11-13T20:58:07.5273849Z git version 2.56.1
+2026-11-13T20:58:07.5290135Z ##[endgroup]
+2026-11-13T20:58:07.5302239Z Temporarily overriding HOME='/home/runner/work/_temp/4f028142-39a6-4024-8a78-9b90077e43e2' before making global git config changes
+2026-11-13T20:58:07.5303540Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-13T20:58:07.5306939Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/sqlite-botpkg/sqlite-botpkg
+2026-11-13T20:58:07.5348153Z Deleting the contents of '/home/runner/work/sqlite-botpkg/sqlite-botpkg'
+2026-11-13T20:58:07.5351023Z ##[group]Initializing the repository
+2026-11-13T20:58:07.5354186Z [command]/usr/bin/git init /home/runner/work/sqlite-botpkg/sqlite-botpkg
+2026-11-13T20:58:07.5424499Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-13T20:58:07.5425752Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-13T20:58:07.5426589Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-13T20:58:07.5427460Z hint: call:
+2026-11-13T20:58:07.5428034Z hint:
+2026-11-13T20:58:07.5428735Z hint: 	git config --global init.defaultBranch <name>
+2026-11-13T20:58:07.5429318Z hint:
+2026-11-13T20:58:07.5430231Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-13T20:58:07.5431642Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-13T20:58:07.5432725Z hint:
+2026-11-13T20:58:07.5433317Z hint: 	git branch -m <name>
+2026-11-13T20:58:07.5433995Z hint:
+2026-11-13T20:58:07.5434885Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-13T20:58:07.5436405Z Initialized empty Git repository in /home/runner/work/sqlite-botpkg/sqlite-botpkg/.git/
+2026-11-13T20:58:07.5439327Z [command]/usr/bin/git remote add origin https://github.com/mwagner-webdev/sqlite-botpkg
+2026-11-13T20:58:07.5514567Z ##[endgroup]
+2026-11-13T20:58:07.5515705Z ##[group]Disabling automatic garbage collection
+2026-11-13T20:58:07.5518607Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-13T20:58:07.5550137Z ##[endgroup]
+2026-11-13T20:58:07.5551122Z ##[group]Setting up auth
+2026-11-13T20:58:07.5555274Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-13T20:58:07.5585744Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-13T20:58:07.6050179Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-13T20:58:07.6079383Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-13T20:58:07.6271330Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-13T20:58:07.6299888Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-13T20:58:07.6490346Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-13T20:58:07.6523647Z ##[endgroup]
+2026-11-13T20:58:07.6524730Z ##[group]Fetching the repository
+2026-11-13T20:58:07.6532820Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +f8dba13f2f5d03f0bd546afcc3e3bd7dc1df46dd:refs/remotes/origin/main
+2026-11-13T20:58:07.9932797Z From https://github.com/mwagner-webdev/sqlite-botpkg
+2026-11-13T20:58:07.9934459Z  * [new ref]         f8dba13f2f5d03f0bd546afcc3e3bd7dc1df46dd -> origin/main
+2026-11-13T20:58:07.9938222Z ##[endgroup]
+2026-11-13T20:58:07.9939572Z ##[group]Determining the checkout info
+2026-11-13T20:58:07.9941026Z ##[endgroup]
+2026-11-13T20:58:07.9944348Z [command]/usr/bin/git sparse-checkout disable
+2026-11-13T20:58:07.9997687Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-13T20:58:08.0026538Z ##[group]Checking out the ref
+2026-11-13T20:58:08.0029814Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-11-13T20:58:08.0156499Z Switched to a new branch 'main'
+2026-11-13T20:58:08.0161392Z branch 'main' set up to track 'origin/main'.
+2026-11-13T20:58:08.0167515Z ##[endgroup]
+2026-11-13T20:58:08.0202962Z [command]/usr/bin/git log -1 --format=%H
+2026-11-13T20:58:08.0224594Z f8dba13f2f5d03f0bd546afcc3e3bd7dc1df46dd
+2026-11-13T20:58:08.0458480Z ##[group]Run curl -fsSL "$BOTLISH_LINUX_URL" -o botlish
+2026-11-13T20:58:08.0459967Z [36;1mcurl -fsSL "$BOTLISH_LINUX_URL" -o botlish[0m
+2026-11-13T20:58:08.0461372Z [36;1mecho "$BOTLISH_LINUX_SHA256  botlish" | sha256sum -c -[0m
+2026-11-13T20:58:08.0462653Z [36;1mchmod +x botlish[0m
+2026-11-13T20:58:08.0463589Z [36;1m./botlish -version[0m
+2026-11-13T20:58:08.0486314Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:58:08.0487809Z env:
+2026-11-13T20:58:08.0488724Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:58:08.0490851Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:58:08.0493378Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:58:08.0495029Z ##[endgroup]
+2026-11-13T20:58:08.7507231Z botlish: OK
+2026-11-13T20:58:08.8586940Z Botlish compiler (no release version; this is a development build)
+2026-11-13T20:58:08.8587532Z source revision: cdb751b, packaged
+2026-11-13T20:58:08.8587882Z front end: 18f05c733c33599f-5527019
+2026-11-13T20:58:08.8588190Z Tcl: 9.0.1
+2026-11-13T20:58:08.8588585Z native backend: packaged (ca1074e8-12339488-dbc87fcc-1559088-f828eab9-17967240)
+2026-11-13T20:58:08.8589058Z native JIT: available
+2026-11-13T20:58:08.8589249Z invocation: botlish
+2026-11-13T20:58:08.8662577Z ##[group]Run actions/download-artifact@v4
+2026-11-13T20:58:08.8662834Z with:
+2026-11-13T20:58:08.8663012Z   name: sqlite-botpkg
+2026-11-13T20:58:08.8663207Z   path: dist
+2026-11-13T20:58:08.8663385Z   merge-multiple: false
+2026-11-13T20:58:08.8663598Z   repository: mwagner-webdev/sqlite-botpkg
+2026-11-13T20:58:08.8663828Z   run-id: 43497669917
+2026-11-13T20:58:08.8664011Z env:
+2026-11-13T20:58:08.8664228Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:58:08.8664719Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:58:08.8665252Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:58:08.8665588Z ##[endgroup]
+2026-11-13T20:58:08.9922153Z Downloading single artifact
+2026-11-13T20:58:09.0075694Z (node:2116) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-13T20:58:09.0076523Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-13T20:58:09.2612469Z Preparing to download the following artifacts:
+2026-11-13T20:58:09.2613279Z - sqlite-botpkg (ID: 14076186210, Size: 1303917, Expected Digest: sha256:89653ffbc6fb077c59608cdd5256c3fbd0a1048ddc137cf132ee443340f74208)
+2026-11-13T20:58:09.4859217Z Redirecting to blob download url: https://productionresultssa9.blob.core.windows.net/actions-results/cb8736c1-40ed-8280-b53e-31bec01332dc/workflow-job-run-5b2c5bca-2ffc-53cc-be7f-76c6b6f1a91d/artifacts/874a78e0335bcd43e70ad22d33cdc0cdf6c4c25b61f6b31e015e736867e72e77.zip
+2026-11-13T20:58:09.4860329Z Starting download of artifact to: /home/runner/work/sqlite-botpkg/sqlite-botpkg/dist
+2026-11-13T20:58:09.8185960Z (node:2116) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+2026-11-13T20:58:10.2862069Z SHA256 digest of downloaded artifact is 89653ffbc6fb077c59608cdd5256c3fbd0a1048ddc137cf132ee443340f74208
+2026-11-13T20:58:10.2862716Z Artifact download completed successfully.
+2026-11-13T20:58:10.2863120Z Total of 1 artifact(s) downloaded
+2026-11-13T20:58:10.2866710Z Download artifact has finished successfully
+2026-11-13T20:58:10.3028730Z ##[group]Run uname -srm; cat /etc/os-release | head -2; gcc --version | head -1
+2026-11-13T20:58:10.3029181Z [36;1muname -srm; cat /etc/os-release | head -2; gcc --version | head -1[0m
+2026-11-13T20:58:10.3029819Z [36;1mdpkg -l | grep -i libsqlite3 || echo "(no system SQLite packages: none is used)"[0m
+2026-11-13T20:58:10.3048293Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:58:10.3048582Z env:
+2026-11-13T20:58:10.3048799Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:58:10.3049289Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:58:10.3049830Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:58:10.3050164Z ##[endgroup]
+2026-11-13T20:58:10.3092875Z Linux 7.0.0-1017-azure x86_64
+2026-11-13T20:58:10.3103756Z PRETTY_NAME="Ubuntu 24.04.5 LTS"
+2026-11-13T20:58:10.3104093Z NAME="Ubuntu"
+2026-11-13T20:58:10.3147081Z gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+2026-11-13T20:58:10.3277637Z ii  libsqlite3-0:amd64                     3.45.1-1ubuntu2.9                                amd64        SQLite 3 shared library
+2026-11-13T20:58:10.3278505Z ii  libsqlite3-dev:amd64                   3.45.1-1ubuntu2.9                                amd64        SQLite 3 development files
+2026-11-13T20:58:10.3314235Z ##[group]Run scripts/fetch_oracle.sh build/oracle
+2026-11-13T20:58:10.3314546Z [36;1mscripts/fetch_oracle.sh build/oracle[0m
+2026-11-13T20:58:10.3331327Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:58:10.3331602Z env:
+2026-11-13T20:58:10.3331815Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:58:10.3332313Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:58:10.3332888Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:58:10.3333234Z ##[endgroup]
+2026-11-13T20:58:11.2394572Z 3.54.1 2026-10-16 14:45:20 555e07ef33f69a0957d24d8e555b702464a131d6f1607f4c3c1e4551e8e6ca76 (64-bit)
+2026-11-13T20:58:11.2429814Z ##[group]Run BOT=$PWD/botlish scripts/run_acceptance.sh dist/sqlite-0.1.0.botpkg 2>&1 | tee acceptance-linux.log
+2026-11-13T20:58:11.2430433Z [36;1mBOT=$PWD/botlish scripts/run_acceptance.sh dist/sqlite-0.1.0.botpkg 2>&1 | tee acceptance-linux.log[0m
+2026-11-13T20:58:11.2447902Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T20:58:11.2448182Z env:
+2026-11-13T20:58:11.2448398Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T20:58:11.2448880Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T20:58:11.2449420Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T20:58:11.2449753Z ##[endgroup]
+2026-11-13T20:58:11.2598816Z == platform: Linux 7.0.0-1017-azure x86_64
+2026-11-13T20:58:11.3675139Z == compiler: Botlish compiler (no release version; this is a development build)
+2026-11-13T20:58:11.3675819Z == compiler: source revision: cdb751b, packaged
+2026-11-13T20:58:11.3676178Z == compiler: front end: 18f05c733c33599f-5527019
+2026-11-13T20:58:11.3676424Z == compiler: Tcl: 9.0.1
+2026-11-13T20:58:12.7047688Z sqlite 0.1.0 (sha256 e44ccc42eb7f): installed
+2026-11-13T20:58:12.7048158Z view linux-x86_64: derived (9 files, 2 native libraries)
+2026-11-13T20:58:12.7048456Z added sqlite (request "0.1", lock 0.1.0)
+2026-11-13T20:58:12.7975565Z note: target views: linux-x86_64 (verify -target T verifies one's native dependencies again)
+2026-11-13T20:58:12.7976372Z verify: 1 package instance(s) in /home/runner/work/sqlite-botpkg/sqlite-botpkg/build/consumer-run: as installed
+2026-11-13T20:58:12.7977562Z (integrity only: installed bytes against local artifacts and the installation record; no artifact carries a publisher signature to authenticate)
+2026-11-13T20:58:13.0116586Z == native plan: native plan for linux-x86_64 (this host), project /home/runner/work/sqlite-botpkg/sqlite-botpkg/build/consumer-run
+2026-11-13T20:58:13.0117828Z == native plan:   library botsqlite3: bundled static (instance sqlite)
+2026-11-13T20:58:13.0118427Z == native plan:     an ar archive of 1 ELF x86-64 object; bundled file, sha256 8add430d9b27
+2026-11-13T20:58:13.0119309Z == native plan:     /home/runner/work/sqlite-botpkg/sqlite-botpkg/build/consumer-run/.bot_modules/.targets/linux-x86_64/sqlite/native/libbotsqlite3.a
+2026-11-13T20:58:13.0120157Z == native plan:   library m: system shared (instance sqlite)
+2026-11-13T20:58:13.0120983Z == native plan:     a linker script; dpkg package libc6-dev:amd64, version 2.39-0ubuntu8.9
+2026-11-13T20:58:13.0121608Z == native plan:     /usr/lib/x86_64-linux-gnu/libm.so
+2026-11-13T20:58:13.0122420Z == native plan: link: the compiler links these from the target package tree (.bot_modules/.targets/linux-x86_64, its .lib): no -L is needed for bundled libraries
+2026-11-13T20:58:13.0123137Z == build
+2026-11-13T20:58:22.2422364Z built info
+2026-11-13T20:58:36.6764600Z built ac_basic
+2026-11-13T20:58:53.7658590Z built ac_values
+2026-11-13T20:59:08.7125379Z built ac_persistence
+2026-11-13T20:59:23.8093274Z built ac_errors
+2026-11-13T20:59:39.7353102Z built ac_transactions
+2026-11-13T20:59:55.3100208Z built ac_resources
+2026-11-13T21:00:09.1667083Z built ac_contention
+2026-11-13T21:00:23.4625131Z built ac_composition
+2026-11-13T21:00:35.9898589Z built interop_write
+2026-11-13T21:00:47.8941602Z built interop_read
+2026-11-13T21:00:59.2518146Z built tasklist
+2026-11-13T21:01:10.1573362Z built kv
+2026-11-13T21:01:10.1573732Z == info
+2026-11-13T21:01:10.1584827Z sqlite version:    3.54.1
+2026-11-13T21:01:10.1585136Z sqlite number:     3054001
+2026-11-13T21:01:10.1590386Z sqlite source id:  2026-10-16 14:45:20 555e07ef33f69a0957d24d8e555b702464a131d6f1607f4c3c1e4551e8e6ca76
+2026-11-13T21:01:10.1591159Z threading mode:    1 (1 = serialized)
+2026-11-13T21:01:10.1591628Z == acceptance programs
+2026-11-13T21:01:10.1659536Z PASS ac_basic: RESULT passed=26 failed=0
+2026-11-13T21:01:10.1744851Z PASS ac_values: RESULT passed=63 failed=0
+2026-11-13T21:01:10.5804043Z PASS ac_persistence: RESULT passed=24 failed=0
+2026-11-13T21:01:10.5886605Z PASS ac_errors: RESULT passed=52 failed=0
+2026-11-13T21:01:10.6003063Z PASS ac_transactions: RESULT passed=28 failed=0
+2026-11-13T21:01:10.6378543Z PASS ac_resources: RESULT passed=32 failed=0
+2026-11-13T21:01:10.8007584Z PASS ac_contention: RESULT passed=20 failed=0
+2026-11-13T21:01:10.8134371Z PASS ac_composition: RESULT passed=12 failed=0
+2026-11-13T21:01:10.8152270Z == independent oracle (sqlite.org's own sqlite3 shell)
+2026-11-13T21:01:10.9238088Z oracle: 3.54.1 2026-10-16 14:45:20 555e07ef33f69
+2026-11-13T21:01:10.9238495Z interop.db written
+2026-11-13T21:01:10.9238688Z RESULT passed=11 failed=0
+2026-11-13T21:01:10.9238880Z RESULT oracle ok
+2026-11-13T21:01:10.9251888Z PASS oracle: 25 checks
+2026-11-13T21:01:10.9252236Z == applications across processes
+2026-11-13T21:01:10.9458248Z PASS tasklist: persistence across 9 processes
+2026-11-13T21:01:10.9472641Z PASS tasklist: bad input exits 1
+2026-11-13T21:01:11.0031684Z PASS kv: persistence across 6 processes
+2026-11-13T21:01:11.0049213Z == summary: 257 checks in the acceptance programs
+2026-11-13T21:01:11.0049594Z ACCEPTANCE OK
+2026-11-13T21:01:11.0085978Z ##[group]Run sudo apt-get install -y valgrind >/dev/null
+2026-11-13T21:01:11.0086333Z [36;1msudo apt-get install -y valgrind >/dev/null[0m
+2026-11-13T21:01:11.0087018Z [36;1mscripts/valgrind.sh "$PWD/build/consumer-run" "$PWD/build/valgrind" 2>&1 | tee valgrind-linux.log[0m
+2026-11-13T21:01:11.0104230Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T21:01:11.0104509Z env:
+2026-11-13T21:01:11.0104718Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T21:01:11.0105191Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T21:01:11.0105723Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T21:01:11.0106055Z ##[endgroup]
+2026-11-13T21:01:16.4552102Z 
+2026-11-13T21:01:16.4552955Z Running kernel seems to be up-to-date.
+2026-11-13T21:01:16.4553259Z 
+2026-11-13T21:01:16.4553384Z No services need to be restarted.
+2026-11-13T21:01:16.4555183Z 
+2026-11-13T21:01:16.4555290Z No containers need to be restarted.
+2026-11-13T21:01:16.4555458Z 
+2026-11-13T21:01:16.4555561Z No user sessions are running outdated binaries.
+2026-11-13T21:01:16.4555738Z 
+2026-11-13T21:01:16.4555903Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-11-13T21:01:20.1695428Z ac_basic: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=26 failed=0
+2026-11-13T21:01:22.9632036Z ac_values: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=63 failed=0
+2026-11-13T21:01:27.4045226Z ac_persistence: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=24 failed=0
+2026-11-13T21:01:30.1616629Z ac_errors: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=52 failed=0
+2026-11-13T21:01:32.9597531Z ac_transactions: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=28 failed=0
+2026-11-13T21:01:36.5967527Z ac_resources: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=32 failed=0
+2026-11-13T21:01:39.4299455Z ac_contention: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=20 failed=0
+2026-11-13T21:01:42.2264581Z ac_composition: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=12 failed=0
+2026-11-13T21:01:45.1419560Z interop_write: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, 
+2026-11-13T21:01:45.1465347Z ##[group]Run cd build/consumer-run
+2026-11-13T21:01:45.1465624Z [36;1mcd build/consumer-run[0m
+2026-11-13T21:01:45.1465947Z [36;1m"$GITHUB_WORKSPACE/botlish" -emit-native-executable bench.bot >/dev/null[0m
+2026-11-13T21:01:45.1466342Z [36;1m./bench | tee "$GITHUB_WORKSPACE/bench-botlish-linux.log"[0m
+2026-11-13T21:01:45.1466666Z [36;1mcd "$GITHUB_WORKSPACE"[0m
+2026-11-13T21:01:45.1467300Z [36;1mnative/build.sh build/native-c >/dev/null[0m
+2026-11-13T21:01:45.1467728Z [36;1mcc -O2 -o build/bench_c bench/bench.c -Ibuild/native-c build/native-c/libbotsqlite3.a -lm -lpthread[0m
+2026-11-13T21:01:45.1468168Z [36;1m(cd build && ./bench_c) | tee bench-c-linux.log[0m
+2026-11-13T21:01:45.1484985Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-13T21:01:45.1485265Z env:
+2026-11-13T21:01:45.1485477Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T21:01:45.1485991Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T21:01:45.1486519Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T21:01:45.1487134Z ##[endgroup]
+2026-11-13T21:01:54.2080374Z bench.bot:56:5: warning: call to `count_rows` is eligible for method syntax (METHOD-ELIGIBLE)
+2026-11-13T21:01:54.2081159Z bench.bot:60:9: warning: call to `count_rows` is eligible for method syntax (METHOD-ELIGIBLE)
+2026-11-13T21:01:54.2081777Z bench.bot:75:5: warning: call to `insert_batched` is eligible for method syntax (METHOD-ELIGIBLE)
+2026-11-13T21:01:54.2082413Z bench.bot:85:5: warning: call to `open_close` is eligible for method syntax (METHOD-ELIGIBLE)
+2026-11-13T21:01:54.2083052Z bench.bot:90:5: warning: call to `open_close` is eligible for method syntax (METHOD-ELIGIBLE)
+2026-11-13T21:01:54.2083691Z bench.bot:95:5: warning: call to `insert_batched` is eligible for method syntax (METHOD-ELIGIBLE)
+2026-11-13T21:01:54.2084403Z bench.bot:107:5: warning: call to `insert_unprepared` is eligible for method syntax (METHOD-ELIGIBLE)
+2026-11-13T21:01:54.2085119Z bench.bot:113:5: warning: call to `insert_autocommit` is eligible for method syntax (METHOD-ELIGIBLE)
+2026-11-13T21:01:54.2085840Z bench.bot:120:5: warning: call to `insert_autocommit` is eligible for method syntax (METHOD-ELIGIBLE)
+2026-11-13T21:01:54.2095917Z /home/runner/work/sqlite-botpkg/sqlite-botpkg/build/consumer-run/wallclock.bot:19:11: warning: call to `wallclock::gettimeofday` is eligible for method syntax (METHOD-ELIGIBLE)
+2026-11-13T21:01:54.2615913Z help: botlish -help warning.method-eligible
+2026-11-13T21:01:56.6691241Z bench open_close_memory: n=2000 total_us=3699
+2026-11-13T21:01:56.6908907Z bench open_close_file: n=1000 total_us=21740
+2026-11-13T21:01:56.9353322Z bench insert_batched_prepared: n=20000 total_us=35762
+2026-11-13T21:01:56.9818093Z bench read_query_all: n=20000 total_us=46443
+2026-11-13T21:01:57.0164883Z bench read_step_row: n=20000 total_us=34715
+2026-11-13T21:01:57.0933142Z bench insert_batched_unprepared: n=5000 total_us=75559
+2026-11-13T21:01:57.4147606Z bench insert_autocommit_file: n=300 total_us=320508
+2026-11-13T21:01:57.4559157Z bench insert_autocommit_memory: n=20000 total_us=40981
+2026-11-13T21:01:57.4891215Z bench scale_insert: n=20000 total_us=33081
+2026-11-13T21:01:57.5141911Z bench scale_read: n=20000 total_us=25081
+2026-11-13T21:01:57.5908706Z bench scale_insert: n=40000 total_us=76544
+2026-11-13T21:01:57.6437105Z bench scale_read: n=40000 total_us=52753
+2026-11-13T21:01:57.8246355Z bench scale_insert: n=80000 total_us=180685
+2026-11-13T21:01:57.9567716Z bench scale_read: n=80000 total_us=132103
+2026-11-13T21:01:57.9568201Z bench leaked connections=0 statements=0
+2026-11-13T21:02:17.5723923Z bench open_close_memory: n=2000 total_us=2089
+2026-11-13T21:02:17.5724335Z bench open_close_file: n=1000 total_us=18276
+2026-11-13T21:02:17.5724698Z bench insert_batched_prepared: n=20000 total_us=10300
+2026-11-13T21:02:17.5725054Z bench read_query_all: n=20000 total_us=2099
+2026-11-13T21:02:17.5725644Z bench read_step_row: n=20000 total_us=1998
+2026-11-13T21:02:17.5725998Z bench insert_batched_unprepared: n=5000 total_us=8445
+2026-11-13T21:02:17.5726373Z bench insert_autocommit_file: n=300 total_us=518571
+2026-11-13T21:02:17.5726734Z bench insert_autocommit_memory: n=20000 total_us=13919
+2026-11-13T21:02:17.5727284Z bench scale_insert: n=20000 total_us=5622
+2026-11-13T21:02:17.5727625Z bench scale_read: n=20000 total_us=2017
+2026-11-13T21:02:17.5727972Z bench scale_insert: n=40000 total_us=11509
+2026-11-13T21:02:17.5728260Z bench scale_read: n=40000 total_us=4023
+2026-11-13T21:02:17.5728494Z bench scale_insert: n=80000 total_us=23695
+2026-11-13T21:02:17.5728723Z bench scale_read: n=80000 total_us=7992
+2026-11-13T21:02:17.5785634Z ##[group]Run actions/upload-artifact@v4
+2026-11-13T21:02:17.5785876Z with:
+2026-11-13T21:02:17.5786052Z   name: acceptance-linux-x86_64
+2026-11-13T21:02:17.5786501Z   path: acceptance-linux.log
+valgrind-linux.log
+bench-botlish-linux.log
+bench-c-linux.log
+build/valgrind/*
+build/consumer-run/*.log
+
+2026-11-13T21:02:17.5787143Z   if-no-files-found: warn
+2026-11-13T21:02:17.5787345Z   compression-level: 6
+2026-11-13T21:02:17.5787527Z   overwrite: false
+2026-11-13T21:02:17.5787706Z   include-hidden-files: false
+2026-11-13T21:02:17.5787899Z env:
+2026-11-13T21:02:17.5788113Z   BOTLISH_REV: cdb751b0ca6171b2a1bcf46a09907316a6a6cb05
+2026-11-13T21:02:17.5788587Z   BOTLISH_LINUX_URL: https://github.com/mwagner-webdev/botlish/releases/download/single-latest/botlish-linux-x86_64
+2026-11-13T21:02:17.5789130Z   BOTLISH_LINUX_SHA256: e16550bc50da47d457284ccfb40869f9eb5ef2c56592b6b6eaf8ec27f86a3fba
+2026-11-13T21:02:17.5789464Z ##[endgroup]
+2026-11-13T21:02:17.7139441Z (node:2809) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-13T21:02:17.7140348Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-13T21:02:17.7259806Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-11-13T21:02:17.7262450Z The least common ancestor is /home/runner/work/sqlite-botpkg/sqlite-botpkg. This will be the root directory of the artifact
+2026-11-13T21:02:17.7263382Z With the provided path, there will be 45 files uploaded
+2026-11-13T21:02:17.7265690Z Artifact name is valid!
+2026-11-13T21:02:17.7266345Z Root directory input is valid!
+2026-11-13T21:02:18.1142274Z Beginning upload of artifact content to blob storage
+2026-11-13T21:02:18.1673073Z (node:2809) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-13T21:02:18.5231760Z Uploaded bytes 25410
+2026-11-13T21:02:18.6011263Z Finished uploading artifact content to blob storage!
+2026-11-13T21:02:18.6012148Z SHA256 digest of uploaded artifact zip is 4f94cc7a5c5b3824e793bb127fad64cf8a4c407fcba03f5a2d49b5264af104f2
+2026-11-13T21:02:18.6013030Z Finalizing artifact upload
+2026-11-13T21:02:18.9837889Z Artifact acceptance-linux-x86_64.zip successfully finalized. Artifact ID 14077480929
+2026-11-13T21:02:18.9839057Z Artifact acceptance-linux-x86_64 has been successfully uploaded! Final size is 25410 bytes. Artifact ID is 14077480929
+2026-11-13T21:02:18.9843434Z Artifact download URL: https://github.com/mwagner-webdev/sqlite-botpkg/actions/runs/43497669917/artifacts/14077480929
+2026-11-13T21:02:19.0034528Z Post job cleanup.
+2026-11-13T21:02:19.0732271Z [command]/usr/bin/git version
+2026-11-13T21:02:19.0765172Z git version 2.56.1
+2026-11-13T21:02:19.0795329Z Temporarily overriding HOME='/home/runner/work/_temp/09444820-c7de-4a14-9afe-83d0f1717596' before making global git config changes
+2026-11-13T21:02:19.0796302Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-13T21:02:19.0798699Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/sqlite-botpkg/sqlite-botpkg
+2026-11-13T21:02:19.0831598Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-13T21:02:19.0860576Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-13T21:02:19.1060822Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-13T21:02:19.1084149Z http.https://github.com/.extraheader
+2026-11-13T21:02:19.1092183Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-13T21:02:19.1121112Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-13T21:02:19.1317308Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-13T21:02:19.1344037Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-13T21:02:19.1693071Z Cleaning up orphan processes
+2026-11-13T21:02:19.1988910Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/download-artifact@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
