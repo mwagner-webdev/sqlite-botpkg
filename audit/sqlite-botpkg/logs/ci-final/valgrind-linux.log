@@ -1,0 +1,9 @@
+ac_basic: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=26 failed=0
+ac_values: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=63 failed=0
+ac_persistence: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=24 failed=0
+ac_errors: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=52 failed=0
+ac_transactions: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=28 failed=0
+ac_resources: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=32 failed=0
+ac_contention: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=20 failed=0
+ac_composition: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, RESULT passed=12 failed=0
+interop_write: valgrind memory errors=0, definitely lost=24 bytes bytes, program exit=0, 
